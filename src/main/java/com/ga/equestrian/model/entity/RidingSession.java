@@ -13,6 +13,10 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 
+/**
+ * Riding session entity includes details about a session.
+ * A capacity of 1 means a private session; more than 1 means a group session.
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
