@@ -5,6 +5,10 @@ import com.ga.equestrian.model.enums.SkillLevel;
 import com.ga.equestrian.model.enums.Specialization;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 /**
  * Instructor entity contains details about the trainer.
@@ -37,4 +41,12 @@ public class Instructor {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private SkillLevel skillLevel;
+
+    @Column(updatable = false)
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @Column
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }

@@ -5,6 +5,10 @@ import com.ga.equestrian.model.enums.HorseStatus;
 import com.ga.equestrian.model.enums.SkillLevel;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
+import org.hibernate.annotations.UpdateTimestamp;
+
+import java.time.LocalDateTime;
 
 /**
  * Horse entity contains descriptions of the horse.
@@ -45,4 +49,12 @@ public class Horse {
 
     @Column
     private String image;
+
+    @Column(updatable = false)
+    @CreationTimestamp
+    private LocalDateTime createdAt;
+
+    @Column
+    @UpdateTimestamp
+    private LocalDateTime updatedAt;
 }
