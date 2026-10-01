@@ -51,7 +51,7 @@ public class GlobalExceptionHandler{
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleInvalidFormat(HttpMessageNotReadableException ex, HttpServletRequest request){
-        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_FORMAT", "Invalid request body", request);
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_FORMAT", "Invalid request body.", request);
     }
 
     /**
@@ -63,8 +63,8 @@ public class GlobalExceptionHandler{
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> internalServerError(Exception ex, HttpServletRequest request){
-        log.error("unexpected error on {}", request.getRequestURI(), ex);
-        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR","An unexpected error occurred. ", request);
+        log.error("Unexpected error on {}", request.getRequestURI(), ex);
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_SERVER_ERROR","An unexpected error occurred.", request);
     }
 
     /**
