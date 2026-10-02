@@ -6,10 +6,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.validation.FieldError;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * This class turns exceptions into JSON error responses.
@@ -52,6 +56,24 @@ public class GlobalExceptionHandler{
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleInvalidFormat(HttpMessageNotReadableException ex, HttpServletRequest request){
         return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_FORMAT", "Invalid request body.", request);
+    }
+
+    /**
+     * handles invalid request data.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 400 response with a structured error body.
+     */
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidMethodArgument(MethodArgumentNotValidException ex, HttpServletRequest request){
+        List<FieldError> errors = ex.getBindingResult().getFieldErrors();
+        List<String> messages = new ArrayList<>();
+        for (FieldError fieldError: errors){
+            messages.add(fieldError.getField() + ": " + fieldError.getDefaultMessage());
+        }
+        String joinedResponse = String.join("; ", messages);
+        return buildResponse(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", joinedResponse, request);
     }
 
     /**
