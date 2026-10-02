@@ -14,6 +14,7 @@ import jakarta.validation.constraints.*;
 @Getter
 @Setter
 public class RegisterRequest {
+
     @NotBlank(message = "First name is required")
     @Size(min =1, max=50,message = "First name must be between 1 and 50 characters.")
     private String firstName;
