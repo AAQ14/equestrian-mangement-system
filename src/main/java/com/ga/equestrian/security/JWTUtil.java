@@ -2,6 +2,8 @@ package com.ga.equestrian.security;
 
 
 import com.ga.equestrian.model.enums.Role;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -68,12 +70,44 @@ public class JWTUtil {
                 .setIssuedAt(new Date()).setExpiration(new Date(System.currentTimeMillis() + jwtVerificationExpirationMs))
                 .signWith(getSigningKey(),SignatureAlgorithm.HS256).compact();
     }
-//
-//    public String getEmailFromToken(String token){
-//
-//    }
-//
-//    public boolean isTokenValid(String token, String purpose){
-//
-//    }
+
+    /**
+     *  Opens a token and returns its claims; throws if the token is invalid or expired.
+     *
+     * @param token a signed token.
+     * @return the claim of the token/
+     */
+    private Claims getClaims(String token){
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
+                .parseClaimsJws(token)
+                .getBody();
+    }
+
+    /**
+     * Reads the email stored in the token. Call this only after the token has been validated.
+     *
+     * @param token a signed token created by this class.
+     * @return the email stored as the token subject.
+     */
+    public String getEmailFromToken(String token){
+        return getClaims(token).getSubject();
+    }
+
+    /**
+     * Checks that token has a valid signature, hoa not expired, and was created for the expected purpose.
+     * Checking the purpose prevents, for example, a verification token from being used to log in.
+     *
+     * @param token the token to check.
+     * @param purpose the purpose the token must have, such as LOGIN.
+     * @return true if the token is valid for that purpose, false otherwise.
+     */
+    public boolean isTokenValid(String token, String purpose){
+        try {
+            return purpose.equals(getClaims(token).get(PURPOSE_CLAIM, String.class));
+        }catch (JwtException | IllegalArgumentException ex){
+            return false;
+        }
+    }
 }
