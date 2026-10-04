@@ -72,10 +72,11 @@ public class JWTUtil {
     }
 
     /**
-     *  Opens a token and returns its claims; throws if the token is invalid or expired.
+     *  Opens a token and returns its claims, the information stored in its payload.
+     *  Throws a JwtException if the signature is wrong or the token is expired or malformed.
      *
      * @param token a signed token.
-     * @return the claim of the token/
+     * @return the claims stored in the token.
      */
     private Claims getClaims(String token){
         return Jwts.parserBuilder()
@@ -96,7 +97,7 @@ public class JWTUtil {
     }
 
     /**
-     * Checks that token has a valid signature, hoa not expired, and was created for the expected purpose.
+     * Checks that token has a valid signature, hos not expired, and was created for the expected purpose.
      * Checking the purpose prevents, for example, a verification token from being used to log in.
      *
      * @param token the token to check.
