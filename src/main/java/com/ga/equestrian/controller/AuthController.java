@@ -1,5 +1,6 @@
 package com.ga.equestrian.controller;
 
+import com.ga.equestrian.dto.request.ForgotPasswordRequest;
 import com.ga.equestrian.dto.request.RegisterRequest;
 import com.ga.equestrian.dto.request.VerifyEmailRequest;
 import com.ga.equestrian.dto.response.UserResponse;
@@ -45,6 +46,17 @@ public class AuthController {
     @PostMapping("/users/verify")
     public ResponseEntity<String> verify(@Valid @RequestBody VerifyEmailRequest verifyEmailRequest){
         verificationService.verifyEmail(verifyEmailRequest.getEmail(), verifyEmailRequest.getCode());
-        return  ResponseEntity.ok("Email verified successfully.");
+        return ResponseEntity.ok("Email verified successfully.");
+    }
+
+    /**
+     *
+     * @param forgotPasswordRequest
+     * @return
+     */
+    @PostMapping("/users/forgot-password")
+    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest){
+        verificationService.sendPasswordResetCode(forgotPasswordRequest.getEmail());
+        return ResponseEntity.ok("Password reset code sent successfully.");
     }
 }

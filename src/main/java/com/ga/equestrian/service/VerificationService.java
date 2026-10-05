@@ -110,4 +110,23 @@ public class VerificationService {
         log.info("Email verified for user {}", user.getId());
 
     }
+
+    /**
+     * Sends a password reset code to the user's email address.
+     *
+     * @param email the email address requesting a password reset.
+     */
+    @Transactional
+    public void sendPasswordResetCode(String email) {
+        String userEmail = email.trim().toLowerCase();
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(()-> new InformationNotFoundException("User with this email " + userEmail + " not found."));
+
+        generateAndSend(user, CodePurpose.PASSWORD_RESET);
+    }
+
+
+
+
 }

@@ -3,6 +3,7 @@ package com.ga.equestrian.service;
 import com.ga.equestrian.dto.request.RegisterRequest;
 import com.ga.equestrian.dto.response.UserResponse;
 import com.ga.equestrian.exception.InformationExistException;
+import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.mapper.UserMapper;
 import com.ga.equestrian.model.entity.User;
 import com.ga.equestrian.model.enums.CodePurpose;
@@ -55,5 +56,26 @@ public class AuthService {
         return userMapper.toResponse(savedUser);
     }
 
+
+    /**
+     * Resets the user's password after validating the password reset code.
+     *
+     * @param email the user's email address.
+     * @param code  the password reset verification code.
+     * @param password  the new password.
+     */
+    @Transactional
+    public void resetPassword(String email, String code, String password){
+        String userEmail = email.trim().toLowerCase();
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(()-> new InformationNotFoundException("User with this email " + userEmail + " not found."));
+
+        verificationService.consumeCode(user, CodePurpose.PASSWORD_RESET, code);
+
+        user.setPassword(password);
+
+        userRepository.save(user);
+    }
 
 }
