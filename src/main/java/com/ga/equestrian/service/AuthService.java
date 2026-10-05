@@ -8,7 +8,9 @@ import com.ga.equestrian.model.entity.User;
 import com.ga.equestrian.model.enums.Role;
 import com.ga.equestrian.repository.UserRepository;
 
+import com.ga.equestrian.security.JWTUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +24,11 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
+    private final JWTUtil jwtUtil;
+    private final EmailService emailService;
+
+    @Value("${app-base-url}")
+    private String baseURL;
 
     /**
      * Registers a new client account.
@@ -44,7 +51,11 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         user.setRole(Role.CLIENT);
         User savedUser = userRepository.save(user);
+        String token = jwtUtil.generateVerificationToken(user.getEmail());
+        String link = baseURL + "/auth/users/verify?token=" + token;
+        emailService.sendVerificationEmail(user.getEmail(), link);
         return userMapper.toResponse(savedUser);
     }
+
 
 }
