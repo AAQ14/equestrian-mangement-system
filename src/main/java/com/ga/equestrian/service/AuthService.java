@@ -1,6 +1,7 @@
 package com.ga.equestrian.service;
 
 import com.ga.equestrian.dto.request.RegisterRequest;
+import com.ga.equestrian.dto.response.LoginResponse;
 import com.ga.equestrian.dto.response.UserResponse;
 import com.ga.equestrian.exception.InformationExistException;
 import com.ga.equestrian.exception.InformationNotFoundException;
@@ -78,12 +79,15 @@ public class AuthService {
     }
 
     /**
+     * Logs in user after validating email, password and account status.
      *
-     * @param email
-     * @param password
-     * @return
+     * @param email the user's email address.
+     * @param password the user's password.
+     * @return a JWT login token containing the user's email and role.
+     * @throws InformationNotFoundException if the email doesn't exit or the password is wrong.
+     * @throws InvalidCodeException if the user's email is not verified.
      */
-    public String login(String email, String password) {
+    public LoginResponse login(String email, String password) {
         String userEmail = email.trim().toLowerCase();
 
         User user = userRepository.findByEmail(email)
@@ -95,10 +99,15 @@ public class AuthService {
             throw new InvalidCodeException("please verify your email before login");
         }
         if(!passwordEncoder.matches(user.getPassword(), password)){
-            throw new InformationNotFoundException("Invalid password or email.")
+            throw new InformationNotFoundException("Invalid password or email.");
         }
 
-        return jwtUtil.generateLoginToken(user.getEmail(), user.getRole());
+        String token =  jwtUtil.generateLoginToken(user.getEmail(), user.getRole());
+        return new LoginResponse(
+                user.getFirstName(),
+                user.getLastName(),
+                token
+        );
     }
 
 }
