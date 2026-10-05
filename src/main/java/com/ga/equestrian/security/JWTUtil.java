@@ -99,6 +99,17 @@ public class JWTUtil {
     }
 
     /**
+     * Reads the user's role stored in token.
+     *
+     * @param token a signed login token.
+     * @return the user's role stored in the token.
+     */
+    public Role getRoleFromToken(String token){
+        String role = getClaims(token).get(ROLE_CLAIM, String.class);
+        return Role.valueOf(role);
+    }
+
+    /**
      * Checks that token has a valid signature, hos not expired, and was created for the expected purpose.
      * Checking the purpose prevents, for example, a verification token from being used to log in.
      *
