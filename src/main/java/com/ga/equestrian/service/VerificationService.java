@@ -8,6 +8,7 @@ import com.ga.equestrian.model.enums.CodePurpose;
 import com.ga.equestrian.model.enums.UserStatus;
 import com.ga.equestrian.repository.UserRepository;
 import com.ga.equestrian.repository.VerificationCodeRepository;
+import com.ga.equestrian.security.JWTUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.parameters.P;
@@ -33,6 +34,7 @@ public class VerificationService {
     private final EmailService emailService;
     private final SecureRandom secureRandom = new SecureRandom();
     private final UserRepository userRepository;
+    private final JWTUtil jwtUtil;
 
     /**
      * creates a new one-time code for the user, replaces any earlier code for the same purpose.
@@ -126,6 +128,23 @@ public class VerificationService {
         generateAndSend(user, CodePurpose.PASSWORD_RESET);
     }
 
+    /**
+     *
+     * @param email
+     * @param code
+     * @return
+     */
+    @Transactional
+    public String verifyResetCode(String email, String code){
+        String userEmail = email.trim().toLowerCase();
+
+        User user = userRepository.findByEmail(userEmail)
+                .orElseThrow(()-> new InformationNotFoundException("User with this email " + userEmail + " not found."));
+
+        consumeCode(user, CodePurpose.PASSWORD_RESET, code);
+
+        return jwtUtil.generatePasswordResetToken(user.getEmail());
+    }
 
 
 

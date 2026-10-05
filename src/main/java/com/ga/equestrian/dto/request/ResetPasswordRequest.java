@@ -17,16 +17,8 @@ import lombok.Setter;
 @Getter
 @Setter
 public class ResetPasswordRequest {
-    @NotBlank(message = "Email is required.")
-    @Email(message = "Email must be valid address")
-    private String email;
-
-    @NotBlank(message = "code is required")
-    @Pattern(regexp = "\\d{6}", message = "code must be 6 digits")
-    private String code;
-
     @NotBlank(message = "Password is required")
     @Pattern(regexp = "^(?=.*[A-Za-z])(?=.*\\d).+$", message = "Password must contain at least one letter and one number")
     @Size(min = 8, max = 30, message = "Password must be between 8 and 30 characters.")
-    private String newPassword;
+    private String password;
 }

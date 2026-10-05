@@ -4,6 +4,7 @@ import com.ga.equestrian.dto.request.RegisterRequest;
 import com.ga.equestrian.dto.response.UserResponse;
 import com.ga.equestrian.exception.InformationExistException;
 import com.ga.equestrian.exception.InformationNotFoundException;
+import com.ga.equestrian.exception.InvalidCodeException;
 import com.ga.equestrian.mapper.UserMapper;
 import com.ga.equestrian.model.entity.User;
 import com.ga.equestrian.model.enums.CodePurpose;
@@ -59,22 +60,19 @@ public class AuthService {
 
     /**
      * Resets the user's password after validating the password reset code.
-     *
-     * @param email the user's email address.
-     * @param code  the password reset verification code.
-     * @param password  the new password.
-     */
+     **/
     @Transactional
-    public void resetPassword(String email, String code, String password){
-        String userEmail = email.trim().toLowerCase();
+    public void resetPassword(String resetToken, String password){
+        if(!jwtUtil.isTokenValid(resetToken, "PASSWORD_RESET")){
+            throw new InvalidCodeException("Invalid or expired reset token.");
+        }
+        String email = jwtUtil.getEmailFromToken(resetToken);
 
-        User user = userRepository.findByEmail(userEmail)
-                .orElseThrow(()-> new InformationNotFoundException("User with this email " + userEmail + " not found."));
-
-        verificationService.consumeCode(user, CodePurpose.PASSWORD_RESET, code);
-
-        user.setPassword(password);
-
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(
+                        ()->new InformationNotFoundException("User with this email "+ email + " not found")
+                );
+        user.setPassword(passwordEncoder.encode(password));
         userRepository.save(user);
     }
 

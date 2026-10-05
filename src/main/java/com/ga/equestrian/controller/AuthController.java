@@ -1,8 +1,6 @@
 package com.ga.equestrian.controller;
 
-import com.ga.equestrian.dto.request.ForgotPasswordRequest;
-import com.ga.equestrian.dto.request.RegisterRequest;
-import com.ga.equestrian.dto.request.VerifyEmailRequest;
+import com.ga.equestrian.dto.request.*;
 import com.ga.equestrian.dto.response.UserResponse;
 import com.ga.equestrian.service.AuthService;
 import com.ga.equestrian.service.VerificationService;
@@ -10,10 +8,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 /**
  * Paths related to registration, login and security.
@@ -59,4 +54,20 @@ public class AuthController {
         verificationService.sendPasswordResetCode(forgotPasswordRequest.getEmail());
         return ResponseEntity.ok("Password reset code sent successfully.");
     }
+
+    @PostMapping("/users/verify-reset-code")
+    public ResponseEntity<String> verifyResetCode(@Valid @RequestBody VerifyResetCodeRequest verifyResetCodeRequest){
+        String resetToken = verificationService.verifyResetCode(verifyResetCodeRequest.getEmail(), verifyResetCodeRequest.getCode());
+        return ResponseEntity.ok(resetToken);
+    }
+
+    @PostMapping("/users/reset-password")
+    public ResponseEntity<String> resetPassword(@RequestHeader("Authorization") String authorization, @Valid @RequestBody ResetPasswordRequest request){
+        String resetToken = authorization.replace("Bearer ", "");
+
+        authService.resetPassword(resetToken, request.getPassword());
+
+        return ResponseEntity.ok("Password reset successfully");
+    }
+
 }
