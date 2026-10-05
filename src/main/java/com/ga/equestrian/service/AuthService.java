@@ -5,6 +5,7 @@ import com.ga.equestrian.dto.response.UserResponse;
 import com.ga.equestrian.exception.InformationExistException;
 import com.ga.equestrian.mapper.UserMapper;
 import com.ga.equestrian.model.entity.User;
+import com.ga.equestrian.model.enums.CodePurpose;
 import com.ga.equestrian.model.enums.Role;
 import com.ga.equestrian.repository.UserRepository;
 
@@ -26,9 +27,8 @@ public class AuthService {
     private final UserMapper userMapper;
     private final JWTUtil jwtUtil;
     private final EmailService emailService;
+    private final VerificationService verificationService;
 
-    @Value("${app-base-url}")
-    private String baseURL;
 
     /**
      * Registers a new client account.
@@ -51,9 +51,7 @@ public class AuthService {
         user.setPassword(passwordEncoder.encode(registerRequest.getPassword()));
         user.setRole(Role.CLIENT);
         User savedUser = userRepository.save(user);
-        String token = jwtUtil.generateVerificationToken(user.getEmail());
-        String link = baseURL + "/auth/users/verify?token=" + token;
-        emailService.sendVerificationCode(user.getEmail(), link);
+        verificationService.generateAndSend(user, CodePurpose.EMAIL_VERIFICATION);
         return userMapper.toResponse(savedUser);
     }
 

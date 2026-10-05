@@ -44,6 +44,6 @@ public class VerificationCode {
     @Column(nullable = false)
     private int attempts = 0 ;
 
-    @Column(updatable = false)
+    @Column(nullable = false)
     private LocalDateTime sendAt;
 }
