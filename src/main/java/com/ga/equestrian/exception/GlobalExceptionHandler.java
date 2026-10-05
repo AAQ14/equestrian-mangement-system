@@ -90,6 +90,19 @@ public class GlobalExceptionHandler{
     }
 
     /**
+     * Handles invalid verification code.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 400 response with error details.
+     */
+    @ExceptionHandler(InvalidCodeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCodeException(InvalidCodeException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_CODE", ex.getMessage(), request);
+    }
+
+
+    /**
      * Builds an error response.
      *
      * @param status the HTTP status to return.
