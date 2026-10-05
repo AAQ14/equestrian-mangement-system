@@ -25,6 +25,8 @@ public class JWTUtil {
 
     private static final String ROLE_CLAIM = "role";
 
+    private static final String PASSWORD_RESET_PURPOSE = "PASSWORD_RESET";
+
     @Value("${jwt-secret}")
     private String secret;
 
@@ -110,5 +112,21 @@ public class JWTUtil {
         }catch (JwtException | IllegalArgumentException ex){
             return false;
         }
+    }
+
+
+    /**
+
+     * @param email
+     * @return
+     */
+    public String generatePasswordResetToken(String email){
+        return Jwts.builder()
+                .setSubject(email)
+                .claim(PURPOSE_CLAIM, PASSWORD_RESET_PURPOSE)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + jwtVerificationExpirationMs))
+                .signWith(getSigningKey(), SignatureAlgorithm.HS256)
+                .compact();
     }
 }
