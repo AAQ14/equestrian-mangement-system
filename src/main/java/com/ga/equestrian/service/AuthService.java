@@ -9,6 +9,7 @@ import com.ga.equestrian.mapper.UserMapper;
 import com.ga.equestrian.model.entity.User;
 import com.ga.equestrian.model.enums.CodePurpose;
 import com.ga.equestrian.model.enums.Role;
+import com.ga.equestrian.model.enums.UserStatus;
 import com.ga.equestrian.repository.UserRepository;
 
 import com.ga.equestrian.security.JWTUtil;
@@ -74,6 +75,30 @@ public class AuthService {
                 );
         user.setPassword(passwordEncoder.encode(password));
         userRepository.save(user);
+    }
+
+    /**
+     *
+     * @param email
+     * @param password
+     * @return
+     */
+    public String login(String email, String password) {
+        String userEmail = email.trim().toLowerCase();
+
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(
+                        ()->new InformationNotFoundException("User with this email " + email + " not found")
+                );
+
+        if(user.getUserStatus() != UserStatus.ACTIVE){
+            throw new InvalidCodeException("please verify your email before login");
+        }
+        if(!passwordEncoder.matches(user.getPassword(), password)){
+            throw new InformationNotFoundException("Invalid password or email.")
+        }
+
+        return jwtUtil.generateLoginToken(user.getEmail(), user.getRole());
     }
 
 }
