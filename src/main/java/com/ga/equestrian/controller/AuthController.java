@@ -1,6 +1,7 @@
 package com.ga.equestrian.controller;
 
 import com.ga.equestrian.dto.request.*;
+import com.ga.equestrian.dto.response.LoginResponse;
 import com.ga.equestrian.dto.response.UserResponse;
 import com.ga.equestrian.service.AuthService;
 import com.ga.equestrian.service.VerificationService;
@@ -8,6 +9,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -68,6 +71,21 @@ public class AuthController {
         authService.resetPassword(resetToken, request.getPassword());
 
         return ResponseEntity.ok("Password reset successfully");
+    }
+
+    /**
+     * Logs in user and returns their name and JWT authentication token.
+     *
+     * @param request the login request containing the user's email and password.
+     * @return a response containing the user's name and JWT login token.
+     */
+    @PostMapping("/users/login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request){
+        System.out.println(request.getEmail()+ request.getPassword());
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        System.out.println(encoder.encode(request.getPassword()));
+        LoginResponse loginResponse = authService.login(request.getEmail(), request.getPassword());
+        return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
     }
 
 }

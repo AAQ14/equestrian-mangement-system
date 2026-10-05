@@ -98,7 +98,7 @@ public class AuthService {
         if(user.getUserStatus() != UserStatus.ACTIVE){
             throw new InvalidCodeException("please verify your email before login");
         }
-        if(!passwordEncoder.matches(user.getPassword(), password)){
+        if(!passwordEncoder.matches(password,  user.getPassword())){
             throw new InformationNotFoundException("Invalid password or email.");
         }
 
