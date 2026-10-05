@@ -53,7 +53,7 @@ public class AuthService {
         User savedUser = userRepository.save(user);
         String token = jwtUtil.generateVerificationToken(user.getEmail());
         String link = baseURL + "/auth/users/verify?token=" + token;
-        emailService.sendVerificationEmail(user.getEmail(), link);
+        emailService.sendVerificationCode(user.getEmail(), link);
         return userMapper.toResponse(savedUser);
     }
 

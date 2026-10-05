@@ -45,6 +45,5 @@ public class VerificationCode {
     private int attempts = 0 ;
 
     @Column(updatable = false)
-    @CreationTimestamp
-    private LocalDateTime createdAt;
+    private LocalDateTime sendAt;
 }
