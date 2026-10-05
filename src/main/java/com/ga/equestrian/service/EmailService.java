@@ -23,17 +23,32 @@ public class EmailService {
 
 
     /**
-     * Sends the email verification link to a new user.
+     * Sends the email verification code to a new user.
      *
      * @param to the recipient's email address.
-     * @param link the verification link the user must open.
+     * @param code the verification code the user must enter.
      */
-    public void sendVerificationEmail(String to, String link){
+    public void sendVerificationCode(String to, String code){
         String subject = "Verify your email";
         String text = "Welcome to the Equestrian Centre!\n\n"
-                + "Please open the link below to verify your email address:\n"
-                + link + "\n\n"
-                + "This link expires in 1 hour.";
+                + "Use the code below to verify your email address:\n"
+                + code + "\n\n"
+                + "This code expires in 15 minutes.";
+        sendEmail(to, subject, text);
+    }
+
+    /**
+     * Sends the password reset code to a user who forgot their password.
+     *
+     * @param to the recipient's email address.
+     * @param code the reset code the user must enter.
+     */
+    public void sendPasswordResetCode(String to, String code){
+        String subject = "Reset your password";
+        String text = "We received a request to reset your Equestrian Centre password.\n\n"
+                + "Use the code below to set a new password:\n"
+                + code + "\n\n"
+                + "This code expires in 15 minutes.\n";
         sendEmail(to, subject, text);
     }
 
