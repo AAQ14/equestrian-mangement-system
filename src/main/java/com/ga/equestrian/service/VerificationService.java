@@ -1,5 +1,6 @@
 package com.ga.equestrian.service;
 
+import com.ga.equestrian.dto.response.ResetPasswordTokenResponse;
 import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.exception.InvalidCodeException;
 import com.ga.equestrian.model.entity.User;
@@ -135,7 +136,7 @@ public class VerificationService {
      * @return
      */
     @Transactional
-    public String verifyResetCode(String email, String code){
+    public ResetPasswordTokenResponse verifyResetCode(String email, String code){
         String userEmail = email.trim().toLowerCase();
 
         User user = userRepository.findByEmail(userEmail)
@@ -143,7 +144,8 @@ public class VerificationService {
 
         consumeCode(user, CodePurpose.PASSWORD_RESET, code);
 
-        return jwtUtil.generatePasswordResetToken(user.getEmail());
+        String token = jwtUtil.generatePasswordResetToken(user.getEmail());
+        return new ResetPasswordTokenResponse(token);
     }
 
 

@@ -2,6 +2,7 @@ package com.ga.equestrian.controller;
 
 import com.ga.equestrian.dto.request.*;
 import com.ga.equestrian.dto.response.LoginResponse;
+import com.ga.equestrian.dto.response.ResetPasswordTokenResponse;
 import com.ga.equestrian.dto.response.UserResponse;
 import com.ga.equestrian.service.AuthService;
 import com.ga.equestrian.service.VerificationService;
@@ -59,9 +60,9 @@ public class AuthController {
     }
 
     @PostMapping("/users/verify-reset-code")
-    public ResponseEntity<String> verifyResetCode(@Valid @RequestBody VerifyResetCodeRequest verifyResetCodeRequest){
-        String resetToken = verificationService.verifyResetCode(verifyResetCodeRequest.getEmail(), verifyResetCodeRequest.getCode());
-        return ResponseEntity.ok(resetToken);
+    public ResponseEntity<ResetPasswordTokenResponse> verifyResetCode(@Valid @RequestBody VerifyResetCodeRequest verifyResetCodeRequest){
+        ResetPasswordTokenResponse resetToken = verificationService.verifyResetCode(verifyResetCodeRequest.getEmail(), verifyResetCodeRequest.getCode());
+        return ResponseEntity.ok().body(resetToken);
     }
 
     @PostMapping("/users/reset-password")
