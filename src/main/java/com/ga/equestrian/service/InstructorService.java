@@ -1,5 +1,6 @@
 package com.ga.equestrian.service;
 
+import com.ga.equestrian.dto.request.InstructorRequest;
 import com.ga.equestrian.dto.response.InstructorResponse;
 import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.mapper.InstructorMapper;
@@ -13,22 +14,22 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class InstructorService {
-    private InstructorRepository instructorRepository;
-    private UserRepository userRepository;
+    private final InstructorRepository instructorRepository;
+    private final UserRepository userRepository;
     private final InstructorMapper instructorMapper;
 
-    public InstructorResponse addInstructor(Instructor instructor){
+    public InstructorResponse addInstructor(InstructorRequest request){
 
-        User user = userRepository.findById(instructor.getUser().getId()).orElseThrow(
-                ()->new InformationNotFoundException("User with this id " + instructor.getUser().getId() + " not found")
+        User user = userRepository.findById(request.getUserId()).orElseThrow(
+                ()->new InformationNotFoundException("User with this id " + request.getUserId() + " not found")
         );
 
         Instructor newInstructor = new Instructor();
         newInstructor.setUser(user);
-        newInstructor.setExperienceYears(instructor.getExperienceYears());
-        newInstructor.setSkillLevel(instructor.getSkillLevel());
-        newInstructor.setSpecialization(instructor.getSpecialization());
-
+        newInstructor.setExperienceYears(request.getExperienceYears());
+        newInstructor.setSkillLevel(request.getSkillLevel());
+        newInstructor.setSpecialization(request.getSpecialization());
+        instructorRepository.save(newInstructor);
         return instructorMapper.toResponse(newInstructor);
     }
 }
