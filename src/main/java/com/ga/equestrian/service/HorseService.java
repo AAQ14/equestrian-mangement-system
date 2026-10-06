@@ -120,4 +120,26 @@ public class HorseService {
                     horse.getImage()
             )).toList();
     }
+
+    /**
+     * Get horse by its ID.
+     *
+     * @param id the id of the horse.
+     * @return the horse response.
+     * @throws InformationNotFoundException if the horse is not found.
+     */
+    public HorseResponse getHorse(Long id){
+        Horse horse = horseRepository.findById(id).orElseThrow(
+                ()-> new InformationNotFoundException("Horse with this " + id + " is not found.")
+        );
+        return new HorseResponse(
+                horse.getId(),
+                horse.getName(),
+                horse.getBreed(),
+                horse.getAge(),
+                horse.getGender(),
+                horse.getHorseStatus(),
+                horse.getSkillLevel(),
+                horse.getImage());
+    }
 }
