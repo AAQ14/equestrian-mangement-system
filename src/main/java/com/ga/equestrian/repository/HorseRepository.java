@@ -1,6 +1,7 @@
 package com.ga.equestrian.repository;
 
 import com.ga.equestrian.model.entity.Horse;
+import java.util.*;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 /**
