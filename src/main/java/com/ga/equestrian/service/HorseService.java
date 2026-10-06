@@ -48,36 +48,46 @@ public class HorseService {
         Horse updatedHorse = horseRepository.findById(id).orElseThrow(
                 ()->new InformationNotFoundException("Horse with this id is " + id + " is not found" )
         );
-
         if (updateHorseRequest.getName() != null) {
             updatedHorse.setName(updateHorseRequest.getName());
         }
-
         if (updateHorseRequest.getBreed() != null) {
             updatedHorse.setBreed(updateHorseRequest.getBreed());
         }
-
         if (updateHorseRequest.getAge() != null) {
             updatedHorse.setAge(updateHorseRequest.getAge());
         }
-
         if (updateHorseRequest.getGender() != null) {
             updatedHorse.setGender(updateHorseRequest.getGender());
         }
-
         if (updateHorseRequest.getHorseStatus() != null) {
             updatedHorse.setHorseStatus(updateHorseRequest.getHorseStatus());
         }
-
         if (updateHorseRequest.getSkillLevel() != null) {
             updatedHorse.setSkillLevel(updateHorseRequest.getSkillLevel());
         }
-
         if(updateHorseRequest.getImage()!=null){
             String filename = fileStorageService.uploadFile(updateHorseRequest.getImage(),  fileStorageService.HORSES_FOLDER);
             updatedHorse.setImage(filename);
         }
         return horseRepository.save(updatedHorse);
+    }
 
+    /**
+     * Delete a horse by its ID.
+     *
+     * @param id the ID of the horse to delete.
+     * @return the deleted horse.
+     * @throws InformationNotFoundException if the horse is not found.
+     */
+    public Horse deleteHorse(Long id){
+        Horse deletedHorse = horseRepository.findById(id).orElseThrow(
+                ()-> new InformationNotFoundException("Horse with this " + id + " is not found.")
+        );
+        if(deletedHorse.getImage()!=null){
+            fileStorageService.deleteImage(deletedHorse.getImage(),fileStorageService.HORSES_FOLDER );
+        }
+        horseRepository.delete(deletedHorse);
+        return deletedHorse;
     }
 }

@@ -31,4 +31,10 @@ public class HorseController {
         horseService.updateHorse(id, updateHorseRequest);
         return ResponseEntity.status(HttpStatus.OK).body("Horse updated successfully");
     }
+
+    @DeleteMapping("/horses/delete/{id}")
+    public ResponseEntity<String> deleteHorse(@PathVariable Long id){
+        horseService.deleteHorse(id);
+        return ResponseEntity.status(HttpStatus.OK).body("Horse deleted successfully");
+    }
 }
