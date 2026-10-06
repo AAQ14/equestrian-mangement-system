@@ -1,11 +1,13 @@
 package com.ga.equestrian.controller;
 
 import com.ga.equestrian.dto.request.HorseRequest;
+import com.ga.equestrian.dto.request.UpdateHorseRequest;
 import com.ga.equestrian.dto.response.UserResponse;
 import com.ga.equestrian.repository.HorseRepository;
 import com.ga.equestrian.service.HorseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,5 +24,11 @@ public class HorseController {
     public ResponseEntity<String> addHorse(@Valid @ModelAttribute HorseRequest horseRequest){
         horseService.createHorse(horseRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body("Horse created successfully");
+    }
+
+    @PutMapping("/horses/update/{id}")
+    public ResponseEntity<String> updateHorse(@PathVariable Long id,@Valid @ModelAttribute UpdateHorseRequest updateHorseRequest){
+        horseService.updateHorse(id, updateHorseRequest);
+        return ResponseEntity.status(HttpStatus.OK).body("Horse updated successfully");
     }
 }
