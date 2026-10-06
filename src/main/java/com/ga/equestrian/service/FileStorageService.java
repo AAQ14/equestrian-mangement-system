@@ -99,4 +99,26 @@ public class FileStorageService {
         }
         return fileName.substring(dotIndex+1).toLowerCase();
     }
+
+    /**
+     * Delete an image when the object holding it is deleted.
+     *
+     * @param fileName the name of the image file to delete.
+     * @param folder the folder containing the image.
+     */
+    public void deleteImage(String fileName, String folder){
+        if(fileName == null || fileName.isBlank()){
+            return;
+        }
+        Path folderpath = Path.of(uploadDir, folder).toAbsolutePath().normalize();
+        Path filePath = folderpath.resolve(fileName).normalize();
+
+        try{
+         Files.deleteIfExists(filePath);
+        }catch(IOException ex){
+            System.err.println("Failed to delete the image: " + ex.getMessage());
+            throw new RuntimeException("Failed to delete the image");
+        }
+
+    }
 }
