@@ -5,7 +5,6 @@ import com.ga.equestrian.model.enums.HorseStatus;
 import com.ga.equestrian.model.enums.SkillLevel;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-i
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

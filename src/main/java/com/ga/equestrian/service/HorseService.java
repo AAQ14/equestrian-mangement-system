@@ -1,6 +1,8 @@
 package com.ga.equestrian.service;
 
 import com.ga.equestrian.dto.request.HorseRequest;
+import com.ga.equestrian.dto.request.UpdateHorseRequest;
+import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.model.entity.Horse;
 import com.ga.equestrian.repository.HorseRepository;
 import lombok.AllArgsConstructor;
@@ -21,6 +23,11 @@ public class HorseService {
 
     private HorseRepository horseRepository;
 
+    /**
+     *
+     * @param horseRequest
+     * @return
+     */
     public Horse createHorse(HorseRequest horseRequest){
         Horse newHorse = new Horse();
         newHorse.setName(horseRequest.getName());
@@ -35,5 +42,42 @@ public class HorseService {
             newHorse.setImage(filename);
         }
         return horseRepository.save(newHorse);
+    }
+
+    public Horse updateHorse(Long id, UpdateHorseRequest updateHorseRequest){
+        Horse updatedHorse = horseRepository.findById(id).orElseThrow(
+                ()->new InformationNotFoundException("Horse with this id is " + id + " is not found" )
+        );
+
+        if (updateHorseRequest.getName() != null) {
+            updatedHorse.setName(updateHorseRequest.getName());
+        }
+
+        if (updateHorseRequest.getBreed() != null) {
+            updatedHorse.setBreed(updateHorseRequest.getBreed());
+        }
+
+        if (updateHorseRequest.getAge() != null) {
+            updatedHorse.setAge(updateHorseRequest.getAge());
+        }
+
+        if (updateHorseRequest.getGender() != null) {
+            updatedHorse.setGender(updateHorseRequest.getGender());
+        }
+
+        if (updateHorseRequest.getHorseStatus() != null) {
+            updatedHorse.setHorseStatus(updateHorseRequest.getHorseStatus());
+        }
+
+        if (updateHorseRequest.getSkillLevel() != null) {
+            updatedHorse.setSkillLevel(updateHorseRequest.getSkillLevel());
+        }
+
+        if(updateHorseRequest.getImage()!=null){
+            String filename = fileStorageService.uploadFile(updateHorseRequest.getImage(),  fileStorageService.HORSES_FOLDER);
+            updatedHorse.setImage(filename);
+        }
+        return horseRepository.save(updatedHorse);
+
     }
 }
