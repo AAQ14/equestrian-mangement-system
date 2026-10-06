@@ -2,6 +2,7 @@ package com.ga.equestrian.controller;
 
 import com.ga.equestrian.dto.request.HorseRequest;
 import com.ga.equestrian.dto.request.UpdateHorseRequest;
+import com.ga.equestrian.dto.response.HorseResponse;
 import com.ga.equestrian.dto.response.UserResponse;
 import com.ga.equestrian.repository.HorseRepository;
 import com.ga.equestrian.service.HorseService;
@@ -12,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -37,4 +40,12 @@ public class HorseController {
         horseService.deleteHorse(id);
         return ResponseEntity.status(HttpStatus.OK).body("Horse deleted successfully");
     }
+
+    @GetMapping("/horses/all")
+    public ResponseEntity<List<HorseResponse>> getAllHorses() {
+        List<HorseResponse> horses = horseService.getAllHorses();
+        return ResponseEntity.ok(horses);
+    }
+
+
 }

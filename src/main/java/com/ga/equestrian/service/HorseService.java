@@ -2,6 +2,7 @@ package com.ga.equestrian.service;
 
 import com.ga.equestrian.dto.request.HorseRequest;
 import com.ga.equestrian.dto.request.UpdateHorseRequest;
+import com.ga.equestrian.dto.response.HorseResponse;
 import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.model.entity.Horse;
 import com.ga.equestrian.repository.HorseRepository;
@@ -13,6 +14,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.UUID;
 
 @Service
@@ -67,8 +69,12 @@ public class HorseService {
             updatedHorse.setSkillLevel(updateHorseRequest.getSkillLevel());
         }
         if(updateHorseRequest.getImage()!=null){
+            String oldImage = updatedHorse.getImage();
             String filename = fileStorageService.uploadFile(updateHorseRequest.getImage(),  fileStorageService.HORSES_FOLDER);
             updatedHorse.setImage(filename);
+            if(oldImage!=null){
+                fileStorageService.deleteImage(oldImage, FileStorageService.HORSES_FOLDER);
+            }
         }
         return horseRepository.save(updatedHorse);
     }
@@ -89,5 +95,29 @@ public class HorseService {
         }
         horseRepository.delete(deletedHorse);
         return deletedHorse;
+    }
+
+    /**
+     * Get all horses stored in the database.
+     *
+     * @return a list of all horses.
+     * @throws InformationNotFoundException if there are no horses.
+     */
+    public List<HorseResponse> getAllHorses(){
+        List<Horse> horses = horseRepository.findAll();
+
+        if(horses.isEmpty()){
+            throw new InformationNotFoundException("There are no horses");
+        }
+            return horses.stream().map(horse -> new HorseResponse(
+                    horse.getId(),
+                    horse.getName(),
+                    horse.getBreed(),
+                    horse.getAge(),
+                    horse.getGender(),
+                    horse.getHorseStatus(),
+                    horse.getSkillLevel(),
+                    horse.getImage()
+            )).toList();
     }
 }

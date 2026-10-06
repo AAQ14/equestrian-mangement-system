@@ -5,7 +5,6 @@ import com.ga.equestrian.model.enums.HorseStatus;
 import com.ga.equestrian.model.enums.SkillLevel;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.springframework.web.multipart.MultipartFile;
 
 @AllArgsConstructor
 @Getter
