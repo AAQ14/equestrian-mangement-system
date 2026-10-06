@@ -101,6 +101,19 @@ public class GlobalExceptionHandler{
         return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_CODE", ex.getMessage(), request);
     }
 
+    /**
+     *
+     * Handles uploads that fail validation, such as empty files,
+     * a file too large, or a type is not allowed.
+     *
+     * @param ex   the exception thrown
+     * @param request  the request that caused the error
+     * @return    a 400 response with error details.
+     */
+    @ExceptionHandler(InvalidFileException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidFileException(InvalidFileException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_FILE", ex.getMessage(), request);
+    }
 
     /**
      * Builds an error response.
