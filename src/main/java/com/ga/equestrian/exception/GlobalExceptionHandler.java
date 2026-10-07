@@ -55,6 +55,7 @@ public class GlobalExceptionHandler{
      */
     @ExceptionHandler(HttpMessageNotReadableException.class)
     public ResponseEntity<ErrorResponse> handleInvalidFormat(HttpMessageNotReadableException ex, HttpServletRequest request){
+        log.warn("Unreadable request body: {}", ex.getMessage());
         return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_FORMAT", "Invalid request body.", request);
     }
 
