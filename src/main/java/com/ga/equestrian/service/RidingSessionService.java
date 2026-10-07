@@ -111,4 +111,20 @@ public class RidingSessionService {
         ridingSessionRepository.save(ridingSession);
         return ridingSessionMapper.toResponse(ridingSession);
     }
+
+    /**
+     * Deletes a riding session by id.
+     *
+     * @param id the session id.
+     * @return the deleted session.
+     * @throws InformationNotFoundException if no session has the id.
+     */
+    @Transactional
+    public RidingSessionResponse deleteSession(Long id) {
+        RidingSession session = ridingSessionRepository.findById(id).orElseThrow(
+                () -> new InformationNotFoundException("Riding session with id " + id + " not found.")
+        );
+        ridingSessionRepository.delete(session);
+        return ridingSessionMapper.toResponse(session);
+    }
 }
