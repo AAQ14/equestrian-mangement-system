@@ -1,4 +1,47 @@
 package com.ga.equestrian.service;
 
+import com.ga.equestrian.dto.request.RidingSessionRequest;
+import com.ga.equestrian.dto.response.RidingSessionResponse;
+import com.ga.equestrian.exception.InformationNotFoundException;
+import com.ga.equestrian.mapper.RidingSessionMapper;
+import com.ga.equestrian.model.entity.Instructor;
+import com.ga.equestrian.model.entity.RidingSession;
+import com.ga.equestrian.repository.InstructorRepository;
+import com.ga.equestrian.repository.RidingSessionRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@RequiredArgsConstructor
 public class RidingSessionService {
+    private final RidingSessionRepository ridingSessionRepository;
+    private final InstructorRepository instructorRepository;
+    private final RidingSessionMapper ridingSessionMapper;
+
+
+    /**
+     * Creates a riding session for an existing instructor.
+     *
+     * @param request the instructor id and the session details.
+     * @return the created session as a response DTO.
+     * @throws InformationNotFoundException if the instructor does not exist.
+     */
+    @Transactional
+    public RidingSessionResponse addSession(RidingSessionRequest request){
+        Instructor instructor = instructorRepository.findById(request.getInstructorId()).orElseThrow(
+                () -> new InformationNotFoundException("Instructor with id " + request.getInstructorId() + " not found."));
+
+        RidingSession session = new RidingSession();
+        session.setInstructor(instructor);
+        session.setDate(request.getDate());
+        session.setStartTime(request.getStartTime());
+        session.setEndTime(request.getEndTime());
+        session.setPrice(request.getPrice());
+        session.setSkillLevel(request.getSkillLevel());
+        session.setCapacity(request.getCapacity());
+
+        RidingSession savedSession = ridingSessionRepository.save(session);
+        return ridingSessionMapper.toResponse(savedSession);
+    }
 }
