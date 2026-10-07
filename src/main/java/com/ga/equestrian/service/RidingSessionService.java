@@ -82,4 +82,33 @@ public class RidingSessionService {
 
         return ridingSessionMapper.toResponse(session);
     }
+
+    /**
+     * Updates a riding session's details by id.
+     * The instructor can be changed to another existing instructor.
+     * @param id  the session id.
+     * @param request the new instructor and session details.
+     * @return the updated session as a response DTO.
+     * @throws InformationNotFoundException if the session or the instructor does not exit.
+     */
+    @Transactional
+    public RidingSessionResponse updateSession(Long id, RidingSessionRequest request){
+        RidingSession ridingSession = ridingSessionRepository.findById(id).orElseThrow(
+                ()-> new InformationNotFoundException("Riding session with id " + id + " not found.")
+        );
+
+        Instructor instructor = instructorRepository.findById(request.getInstructorId()).orElseThrow(
+                () -> new InformationNotFoundException("Instructor with id " + request.getInstructorId() + " not found."));
+
+
+        ridingSession.setInstructor(instructor);
+        ridingSession.setDate(request.getDate());
+        ridingSession.setStartTime(request.getStartTime());
+        ridingSession.setEndTime(request.getEndTime());
+        ridingSession.setPrice(request.getPrice());
+        ridingSession.setSkillLevel(request.getSkillLevel());
+        ridingSession.setCapacity(request.getCapacity());
+        ridingSessionRepository.save(ridingSession);
+        return ridingSessionMapper.toResponse(ridingSession);
+    }
 }
