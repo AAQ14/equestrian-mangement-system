@@ -12,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class RidingSessionService {
@@ -43,5 +45,24 @@ public class RidingSessionService {
 
         RidingSession savedSession = ridingSessionRepository.save(session);
         return ridingSessionMapper.toResponse(savedSession);
+    }
+
+    /**
+     * Returns all riding sessions as response DTOs.
+     * Throws an exception if there are no sessions.
+     *
+     * @return the list of sessions.
+     * @throws InformationNotFoundException if no sessions exist.
+     */
+    @Transactional(readOnly = true)
+    public List<RidingSessionResponse> getAllSessions(){
+        List<RidingSessionResponse> allSessions = ridingSessionRepository.findAll()
+                .stream()
+                .map(ridingSessionMapper::toResponse)
+                .toList();
+        if(allSessions.isEmpty()){
+            throw new InformationNotFoundException("the list is empty, no riding sessions");
+        }
+        return allSessions;
     }
 }
