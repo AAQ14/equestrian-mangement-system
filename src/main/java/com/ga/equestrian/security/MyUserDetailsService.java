@@ -17,7 +17,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 public class MyUserDetailsService implements UserDetailsService {
-    UserRepository userRepository;
+    private final UserRepository userRepository;
 
     /**
      * find a user by email and keep it for Spring Security.
