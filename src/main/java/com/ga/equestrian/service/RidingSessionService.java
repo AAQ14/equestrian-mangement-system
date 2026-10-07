@@ -65,4 +65,21 @@ public class RidingSessionService {
         }
         return allSessions;
     }
+
+
+    /**
+     * Returns one riding session by id.
+     *
+     * @param id the session id.
+     * @return the session as a response DTO.
+     * @throws InformationNotFoundException if no session has this id.
+     */
+    @Transactional(readOnly = true)
+    public RidingSessionResponse getSessionById(Long id){
+        RidingSession session = ridingSessionRepository.findById(id).orElseThrow(
+                () -> new InformationNotFoundException("Riding session with id " + id + " not found.")
+        );
+
+        return ridingSessionMapper.toResponse(session);
+    }
 }
