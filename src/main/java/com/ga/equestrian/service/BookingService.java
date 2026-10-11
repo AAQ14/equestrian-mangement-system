@@ -1,0 +1,93 @@
+package com.ga.equestrian.service;
+
+import com.ga.equestrian.dto.request.BookingRequest;
+import com.ga.equestrian.dto.response.BookingResponse;
+import com.ga.equestrian.exception.InformationExistException;
+import com.ga.equestrian.exception.InformationNotFoundException;
+import com.ga.equestrian.exception.InvalidBookingException;
+import com.ga.equestrian.mapper.BookingMapper;
+import com.ga.equestrian.model.entity.Booking;
+import com.ga.equestrian.model.entity.RidingSession;
+import com.ga.equestrian.model.entity.User;
+import com.ga.equestrian.model.enums.BookingStatus;
+import com.ga.equestrian.model.enums.Role;
+import com.ga.equestrian.model.enums.SessionStatus;
+import com.ga.equestrian.model.enums.UserStatus;
+import com.ga.equestrian.repository.BookingRepository;
+import com.ga.equestrian.repository.RidingSessionRepository;
+import com.ga.equestrian.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Service
+@Slf4j
+@RequiredArgsConstructor
+public class BookingService {
+    private static final List<BookingStatus> SEAT_HOLDING_STATUSES =
+            List.of(BookingStatus.PENDING, BookingStatus.CONFIRMED);
+
+    private final BookingRepository bookingRepository;
+    private final RidingSessionRepository ridingSessionRepository;
+    private final UserRepository userRepository;
+    private final BookingMapper bookingMapper;
+
+    @Transactional
+    public BookingResponse createBooking(String email, BookingRequest request){
+        User signedInUser = userRepository.findByEmail(email).orElseThrow(
+                ()->new InformationNotFoundException("User with email " + email + " not found.")
+        );
+
+        User bookedUser = signedInUser;
+
+        if(request.getUserId()!=null) {
+            if (signedInUser.getRole() == Role.CLIENT) {
+                throw new AccessDeniedException("Clients can only book for themselves.");
+            }
+            bookedUser = userRepository.findById(request.getUserId()).orElseThrow(
+                    () -> new InformationNotFoundException("User with id " + request.getUserId() + " not found.")
+            );
+        }
+            if(bookedUser.getUserStatus() != UserStatus.ACTIVE){
+                throw new InvalidBookingException("Bookings can only be made for active users.");
+            }
+            RidingSession session = ridingSessionRepository.findById(request.getRidingSessionId()).orElseThrow(
+                    () -> new InformationNotFoundException("Riding session with id " + request.getRidingSessionId() + " not found.")
+            );
+            if (session.getSessionStatus() != SessionStatus.AVAILABLE) {
+                throw new InvalidBookingException("This session is not available for booking.");
+            }
+
+            LocalDateTime sessionStart = LocalDateTime.of(session.getDate(), session.getStartTime());
+            if (sessionStart.isBefore(LocalDateTime.now())) {
+                throw new InvalidBookingException("This session has already started or finished.");
+            }
+
+            if(bookingRepository.exitsByUserIdAndRidingSessionIdAndBookingStatusNot(bookedUser.getId(), session.getId(), BookingStatus.CANCELLED)){
+                throw new InformationExistException("This user already has a booking for this session.");
+            }
+
+            long takenSpots = bookingRepository.countByRidingSessionIdAndBookingStatusIn(session.getId(), SEAT_HOLDING_STATUSES);
+            if(takenSpots>= session.getCapacity()){
+                throw new InformationExistException("Riding session with id " + session.getId() + " is fully booked.");
+            }
+
+            Booking booking = new Booking();
+            booking.setUser(bookedUser);
+            booking.setRidingSession(session);
+            Booking savedBooking = bookingRepository.save(booking);
+            if (takenSpots + 1 >= session.getCapacity()) {
+                session.setSessionStatus(SessionStatus.FULL);
+            }
+        log.info("User {} created booking {} for session {} (booked user {})",
+                signedInUser.getId(), savedBooking.getId(), session.getId(), bookedUser.getId());
+            return bookingMapper.toResponse(savedBooking);
+
+    }
+
+}

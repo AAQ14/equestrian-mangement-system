@@ -18,8 +18,8 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "bookings",
-uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "session_id"}))
+@Table(name = "bookings")
+//uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "session_id"}))
 @ToString(exclude = {"user", "ridingSession"})
 public class Booking {
     @Id
