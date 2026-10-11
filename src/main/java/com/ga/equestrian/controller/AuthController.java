@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
@@ -39,8 +40,11 @@ public class AuthController {
     }
 
     /**
+     * Verifies a new account's email using the code sent to the user.
+     * Returns 200 on success and 400 if the data is invalid or the code is wrong, expired or locked.
      *
-     * @return
+     * @param verifyEmailRequest the email and the verification code.
+     * @return a confirmation message.
      */
     @PostMapping("/users/verify")
     public ResponseEntity<String> verify(@Valid @RequestBody VerifyEmailRequest verifyEmailRequest){
@@ -49,9 +53,11 @@ public class AuthController {
     }
 
     /**
+     * Sends a password reset code to the user's email.
+     * Returns 200 on success, 400 if the email is invalid, and 404 if no user has this email.
      *
-     * @param forgotPasswordRequest
-     * @return
+     * @param forgotPasswordRequest the email of the account to recover.
+     * @return a confirmation message.
      */
     @PostMapping("/users/forgot-password")
     public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest){
@@ -59,12 +65,27 @@ public class AuthController {
         return ResponseEntity.ok("Password reset code sent successfully.");
     }
 
+    /**
+     * Checks the password reset code and returns a short-lived reset token.
+     * Returns 200 on success and 400 if the data is invalid or the code is wrong, expired or locked.
+     *
+     * @param verifyResetCodeRequest the email and the reset code.
+     * @return the reset token to use in the reset-password request.
+     */
     @PostMapping("/users/verify-reset-code")
     public ResponseEntity<ResetPasswordTokenResponse> verifyResetCode(@Valid @RequestBody VerifyResetCodeRequest verifyResetCodeRequest){
         ResetPasswordTokenResponse resetToken = verificationService.verifyResetCode(verifyResetCodeRequest.getEmail(), verifyResetCodeRequest.getCode());
         return ResponseEntity.ok().body(resetToken);
     }
 
+    /**
+     * Sets a new password using the reset token from the Authorization header.
+     * Returns 200 on success and 400 if the password is invalid or the token is invalid or expired.
+     *
+     * @param authorization the Authorization header holding the reset token as "Bearer token".
+     * @param request the new password.
+     * @return a confirmation message.
+     */
     @PostMapping("/users/reset-password")
     public ResponseEntity<String> resetPassword(@RequestHeader("Authorization") String authorization, @Valid @RequestBody ResetPasswordRequest request){
         String resetToken = authorization.replace("Bearer ", "");
@@ -87,6 +108,21 @@ public class AuthController {
         System.out.println(encoder.encode(request.getPassword()));
         LoginResponse loginResponse = authService.login(request.getEmail(), request.getPassword());
         return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
+    }
+
+    /**
+     * Changes the password of the signed-in user.
+     * Returns 200 on success, 400 if the data is invalid or the current password is wrong,
+     * and 401 or 403 if the token is missing or invalid.
+     *
+     * @param authentication the signed-in user, set by the JWT filter.
+     * @param request the current and the new password.
+     * @return a confirmation message.
+     */
+    @PutMapping("/users/change-password")
+    public ResponseEntity<String> changePassword(Authentication authentication, @Valid @RequestBody ChangePasswordRequest request){
+        authService.changePassword(authentication.getName(), request.getCurrentPassword(), request.getNewPassword());
+        return ResponseEntity.ok("Password changed successfully.");
     }
 
 }
