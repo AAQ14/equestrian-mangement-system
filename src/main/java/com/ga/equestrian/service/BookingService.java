@@ -120,4 +120,40 @@ public class BookingService {
         return userRepository.findByEmail(email).orElseThrow(
                 () -> new InformationNotFoundException("User with email " + email + " not found."));
     }
+
+
+    /**
+     * Returns one booking by id.
+     * Clients can only view their own bookings.
+     *
+     * @param id the booking id.
+     * @param email the email of the signed-in user, taken from the JWT.
+     * @return the booking as a response DTO.
+     * @throws InformationNotFoundException if the booking or the signed-in user does not exist.
+     * @throws AccessDeniedException if a client requests another user's booking.
+     */
+    @Transactional(readOnly = true)
+    public BookingResponse getBookingById(Long id, String email){
+        User signedInUser = findUserByEmail(email);
+        return bookingMapper.toResponse(findAccessibleBooking(id, signedInUser));
+    }
+
+
+    /**
+     * Finds a booking and checks that the signed-in user is allowed to access it.
+     *
+     * @param id the booking id.
+     * @param signedInUser the user making the request.
+     * @return the booking.
+     * @throws InformationNotFoundException if no booking has this id.
+     * @throws AccessDeniedException if a client asks for another user's booking.
+     */
+    private Booking findAccessibleBooking(Long id, User signedInUser) {
+        Booking booking = bookingRepository.findById(id).orElseThrow(
+                () -> new InformationNotFoundException("Booking with id " + id + " not found."));
+        if (signedInUser.getRole() == Role.CLIENT && !booking.getUser().getId().equals(signedInUser.getId())) {
+            throw new AccessDeniedException("You can only access your own bookings.");
+        }
+        return booking;
+    }
 }
