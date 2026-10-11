@@ -10,8 +10,7 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 /**
- * loads users from database for Spring Security.
- *
+ * Loads users from database for Spring Security.
  */
 
 @Service
@@ -20,7 +19,7 @@ public class MyUserDetailsService implements UserDetailsService {
     private final UserRepository userRepository;
 
     /**
-     * find a user by email and keep it for Spring Security.
+     * Finds a user by email and keep it for Spring Security.
      *
      * @param email the email identifying the user whose data is required.
      * @return the matching user as UserDetails object.

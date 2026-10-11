@@ -6,6 +6,7 @@ import com.ga.equestrian.dto.response.UserResponse;
 import com.ga.equestrian.exception.InformationExistException;
 import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.exception.InvalidCodeException;
+import com.ga.equestrian.exception.InvalidPasswordException;
 import com.ga.equestrian.mapper.UserMapper;
 import com.ga.equestrian.model.entity.User;
 import com.ga.equestrian.model.enums.CodePurpose;
@@ -15,6 +16,7 @@ import com.ga.equestrian.repository.UserRepository;
 
 import com.ga.equestrian.security.JWTUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
  * Handles registration, login and the other authentication rules.
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuthService {
     private final UserRepository userRepository;
@@ -61,8 +64,14 @@ public class AuthService {
 
 
     /**
-     * Resets the user's password after validating the password reset code.
-     **/
+     * Sets a new password for the account named in a valid password reset token.
+     * The token is issued only after the user has entered a correct reset code.
+     *
+     * @param resetToken the password reset token received after verifying the reset code.
+     * @param password the new password, which is hashed before it is saved.
+     * @throws InvalidCodeException if the token is invalid, expired or was not issued for a password reset.
+     * @throws InformationNotFoundException if no user matches the email stored in the token.
+     */
     @Transactional
     public void resetPassword(String resetToken, String password){
         if(!jwtUtil.isTokenValid(resetToken, "PASSWORD_RESET")){
@@ -110,4 +119,27 @@ public class AuthService {
         );
     }
 
+    /**
+     * Changes the password of the signed-in user after checking the current password.
+     *
+     * @param email the email of the signed-in user, taken from the JWT.
+     * @param currentPassword the user's current password.
+     * @param newPassword the new password.
+     * @throws InformationNotFoundException if the user does not exist.
+     * @throws InvalidPasswordException if the current password is wrong or the new one is the same.
+     */
+    @Transactional
+    public void changePassword(String email, String currentPassword, String newPassword){
+        User user = userRepository.findByEmail(email).orElseThrow(
+                () -> new InformationNotFoundException("User with email " + email + " not found.")
+        );
+        if(!passwordEncoder.matches(currentPassword, user.getPassword())){
+            throw new InvalidPasswordException("Current password is incorrect.");
+        }
+        if(passwordEncoder.matches(newPassword, user.getPassword())){
+            throw new InvalidPasswordException("New password must be different from the current password.");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        log.info("Password changed for user {}", user.getId());
+    }
 }
