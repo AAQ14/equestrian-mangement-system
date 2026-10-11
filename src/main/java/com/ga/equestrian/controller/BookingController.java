@@ -82,5 +82,19 @@ public class BookingController {
     }
 
 
+    /**
+     * Cancels a booking by id. The booking is kept with the CANCELLED status.
+     * Returns 200 on success, 403 if the user is not allowed,
+     * 404 if the booking does not exist, and 422 if it is already cancelled or completed.
+     *
+     * @param id the booking id.
+     * @param authentication the signed-in user, set by the JWT filter.
+     * @return the cancelled booking.
+     */
+    @DeleteMapping("/{id}")
+    public ResponseEntity<BookingResponse> deleteBooking(@PathVariable Long id, Authentication authentication){
+        BookingResponse booking = bookingService.deleteBooking(id, authentication.getName());
+        return ResponseEntity.status(HttpStatus.OK).body(booking);
+    }
 
 }

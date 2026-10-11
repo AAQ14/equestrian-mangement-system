@@ -22,6 +22,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.DeleteMapping;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -163,6 +164,25 @@ public class BookingService {
         return bookingMapper.toResponse(booking);
     }
 
+    /**
+     * Cancels a booking by id. The booking is kept in the database with the CANCELLED status,
+     * and its spot in the session is released.
+     *
+     * @param id the booking id.
+     * @param email the email of the signed-in user, taken from the JWT.
+     * @return the cancelled booking.
+     * @throws InformationNotFoundException if the booking or the signed-in user does not exist.
+     * @throws AccessDeniedException if a client cancels another user's booking.
+     * @throws InvalidBookingException if the booking is already cancelled or completed.
+     */
+    @Transactional
+    public BookingResponse deleteBooking(Long id, String email){
+        User signedInUser = findUserByEmail(email);
+        Booking booking = findAccessibleBooking(id, signedInUser);
+        changeStatus(booking, BookingStatus.CANCELLED);
+        log.info("User {} cancelled booking {}", signedInUser.getId(), booking.getId());
+        return bookingMapper.toResponse(booking);
+    }
 
     /**
      * Finds a booking and checks that the signed-in user is allowed to access it.
