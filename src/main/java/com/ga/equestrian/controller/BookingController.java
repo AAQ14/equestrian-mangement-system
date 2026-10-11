@@ -8,10 +8,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -33,5 +32,18 @@ public class BookingController {
     public ResponseEntity<BookingResponse> createBooking(Authentication authentication, @Valid @RequestBody BookingRequest request){
         BookingResponse response = bookingService.createBooking(authentication.getName(), request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    /**
+     * Returns bookings. Clients get their own; instructors and admins get all.
+     * Returns 200 on success.
+     *
+     * @param authentication the signed-in user, set by the JWT filter.
+     * @return the list of bookings.
+     */
+    @GetMapping("/bookings")
+    public ResponseEntity<List<BookingResponse>> getAllBookings(Authentication authentication) {
+        List<BookingResponse> bookings = bookingService.getAllBookings(authentication.getName());
+        return ResponseEntity.status(HttpStatus.OK).body(bookings);
     }
 }

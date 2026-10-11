@@ -90,4 +90,34 @@ public class BookingService {
 
     }
 
+    /**
+     * Returns bookings as response DTOs.
+     * Clients get only their own bookings; instructors and admins get all of them.
+     *
+     * @param email the email of the signed-in user, taken from the JWT.
+     * @return the list of bookings, empty if there are none.
+     * @throws InformationNotFoundException if the signed-in user does not exist.
+     */
+    @Transactional(readOnly = true)
+    public List<BookingResponse> getAllBookings(String email) {
+        User signedInUser = findUserByEmail(email);
+        List<Booking> bookings = signedInUser.getRole() == Role.CLIENT
+                ? bookingRepository.findByUserId(signedInUser.getId())
+                : bookingRepository.findAll();
+        return bookings.stream().map(bookingMapper::toResponse).toList();
+    }
+
+
+
+    /**
+     * Finds a user by the email stored in the JWT.
+     *
+     * @param email the user's email.
+     * @return the user.
+     * @throws InformationNotFoundException if no user has this email.
+     */
+    private User findUserByEmail(String email) {
+        return userRepository.findByEmail(email).orElseThrow(
+                () -> new InformationNotFoundException("User with email " + email + " not found."));
+    }
 }

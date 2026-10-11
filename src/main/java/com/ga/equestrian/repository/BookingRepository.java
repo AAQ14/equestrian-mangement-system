@@ -32,4 +32,12 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      */
     boolean existsByUserIdAndRidingSessionIdAndBookingStatusNot(Long userId, Long sessionId, BookingStatus bookingStatus);
 
+    /**
+     * Finds all the bookings that belong to a user.
+     *
+     * @param userId the id of the user.
+     * @return the user's bookings, or an empty list if there are none.
+     */
+    List<Booking> findByUserId(Long userId);
+
 }
