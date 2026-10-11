@@ -100,7 +100,6 @@ public class RidingSessionService {
         Instructor instructor = instructorRepository.findById(request.getInstructorId()).orElseThrow(
                 () -> new InformationNotFoundException("Instructor with id " + request.getInstructorId() + " not found."));
 
-
         ridingSession.setInstructor(instructor);
         ridingSession.setDate(request.getDate());
         ridingSession.setStartTime(request.getStartTime());
