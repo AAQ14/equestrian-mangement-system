@@ -3,6 +3,7 @@ package com.ga.equestrian.controller;
 import com.ga.equestrian.dto.request.BookingRequest;
 import com.ga.equestrian.dto.request.UpdateBookingRequest;
 import com.ga.equestrian.dto.response.BookingResponse;
+import com.ga.equestrian.model.enums.BookingStatus;
 import com.ga.equestrian.service.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -40,11 +41,12 @@ public class BookingController {
      * Returns 200 on success.
      *
      * @param authentication the signed-in user, set by the JWT filter.
+     * @param status the booking status to filter by, or null for all.
      * @return the list of bookings.
      */
     @GetMapping()
-    public ResponseEntity<List<BookingResponse>> getAllBookings(Authentication authentication) {
-        List<BookingResponse> bookings = bookingService.getAllBookings(authentication.getName());
+    public ResponseEntity<List<BookingResponse>> getAllBookings(Authentication authentication, @RequestParam(required = false)BookingStatus status) {
+        List<BookingResponse> bookings = bookingService.getAllBookings(authentication.getName(), status);
         return ResponseEntity.status(HttpStatus.OK).body(bookings);
     }
 

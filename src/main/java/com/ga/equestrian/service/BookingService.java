@@ -93,19 +93,31 @@ public class BookingService {
     }
 
     /**
-     * Returns bookings as response DTOs.
+     * Returns bookings as response DTOs, optionally filtered by status.
      * Clients get only their own bookings; instructors and admins get all of them.
      *
      * @param email the email of the signed-in user, taken from the JWT.
+     * @param status the booking status to filter by, or null for all statuses.
      * @return the list of bookings, empty if there are none.
      * @throws InformationNotFoundException if the signed-in user does not exist.
      */
     @Transactional(readOnly = true)
-    public List<BookingResponse> getAllBookings(String email) {
+    public List<BookingResponse> getAllBookings(String email, BookingStatus status) {
         User signedInUser = findUserByEmail(email);
-        List<Booking> bookings = signedInUser.getRole() == Role.CLIENT
-                ? bookingRepository.findByUserId(signedInUser.getId())
-                : bookingRepository.findAll();
+        List<Booking> bookings;
+        if(signedInUser.getRole() == Role.CLIENT){
+            if(status != null){
+                bookings = bookingRepository.findByUserIdAndBookingStatus(signedInUser.getId(), status);
+            } else{
+                bookings = bookingRepository.findByUserId(signedInUser.getId());
+            }
+        } else{
+            if(status != null){
+                bookings = bookingRepository.findByBookingStatus(status);
+            }else{
+                bookings = bookingRepository.findAll();
+            }
+        }
         return bookings.stream().map(bookingMapper::toResponse).toList();
     }
 
