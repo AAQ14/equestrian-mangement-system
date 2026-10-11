@@ -3,14 +3,18 @@ package com.ga.equestrian.controller;
 import com.ga.equestrian.dto.request.RidingSessionRequest;
 import com.ga.equestrian.dto.request.UpdateRidingSessionRequest;
 import com.ga.equestrian.dto.response.RidingSessionResponse;
+import com.ga.equestrian.model.enums.SessionStatus;
+import com.ga.equestrian.model.enums.SkillLevel;
 import com.ga.equestrian.service.RidingSessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
 
 /**
@@ -47,10 +51,10 @@ public class RidingSessionController {
      *
      * @return the list of sessions.
      */
-    @GetMapping("/")
-    public ResponseEntity<List<RidingSessionResponse>> getAllSessions()
+    @GetMapping
+    public ResponseEntity<List<RidingSessionResponse>> getAllSessions(@RequestParam(required = false)SessionStatus sessionStatus, @RequestParam(required = false)SkillLevel skillLevel, @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)LocalDate date)
     {
-        List<RidingSessionResponse> allRidingSessions = ridingSessionService.getAllSessions();
+        List<RidingSessionResponse> allRidingSessions = ridingSessionService.getAllSessions(sessionStatus, skillLevel, date);
         return ResponseEntity.status(HttpStatus.OK).body(allRidingSessions);
     }
 
