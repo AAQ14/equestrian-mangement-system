@@ -25,6 +25,14 @@ public class RidingSessionController {
 
     private final RidingSessionService ridingSessionService;
 
+    /**
+     * Creates a riding session.
+     *  Returns 201 on success, 400 if data is invalid, 403 if the user is not an instructor,
+     *  or not an admin and 404 if the instructor does not exist.
+     *
+     * @param request the session details sent by the instructor or the admin.
+     * @return the created session.
+     */
     @PostMapping("/create")
     @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
     public ResponseEntity<RidingSessionResponse> addSession(@Valid @RequestBody RidingSessionRequest request) {
@@ -32,6 +40,13 @@ public class RidingSessionController {
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
+
+    /**
+     *  Returns all riding sessions.
+     *  Returns 200 on success and 404 if there are no sessions.
+     *
+     * @return the list of sessions.
+     */
     @GetMapping("/")
     public ResponseEntity<List<RidingSessionResponse>> getAllSessions()
     {
@@ -40,6 +55,13 @@ public class RidingSessionController {
     }
 
 
+    /**
+     * Get a riding session by id.
+     * Returns 200 on success and 404 if there are no sessions.
+     *
+     * @param id the session id.
+     * @return the session.
+     */
     @GetMapping("/{id}")
     public ResponseEntity<RidingSessionResponse> getSessionById(@PathVariable Long id) {
         RidingSessionResponse response = ridingSessionService.getSessionById(id);
