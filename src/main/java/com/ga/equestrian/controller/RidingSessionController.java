@@ -46,9 +46,13 @@ public class RidingSessionController {
 
 
     /**
-     *  Returns all riding sessions.
-     *  Returns 200 on success and 404 if there are no sessions.
+     * Returns riding sessions, optionally filtered by status, skill level or date.
+     * Only one filter is applied at a time, in this order: status, skill level, date.
+     * Returns 200 on success, 400 if a filter value is invalid, and 404 if no sessions match.
      *
+     * @param sessionStatus the session status to filter by, or null.
+     * @param skillLevel the skill level to filter by, or null.
+     * @param date the session date to filter by (yyyy-MM-dd), or null.
      * @return the list of sessions.
      */
     @GetMapping
