@@ -7,12 +7,15 @@ import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.mapper.RidingSessionMapper;
 import com.ga.equestrian.model.entity.Instructor;
 import com.ga.equestrian.model.entity.RidingSession;
+import com.ga.equestrian.model.enums.SessionStatus;
+import com.ga.equestrian.model.enums.SkillLevel;
 import com.ga.equestrian.repository.InstructorRepository;
 import com.ga.equestrian.repository.RidingSessionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @Service
@@ -49,22 +52,36 @@ public class RidingSessionService {
     }
 
     /**
-     * Returns all riding sessions as response DTOs.
+     * Returns riding sessions as response DTOs, optionally filtered by status, skill level or date.
+     * Only one filter is applied at a time, in this order: status, skill level, date.
      * Throws an exception if there are no sessions.
      *
+     * @param status the session status to filter by, or null.
+     * @param skillLevel the skill level to filter by, or null.
+     * @param date the session date to filter by, or null.
      * @return the list of sessions.
-     * @throws InformationNotFoundException if no sessions exist.
+     * @throws InformationNotFoundException if no sessions match.
      */
     @Transactional(readOnly = true)
-    public List<RidingSessionResponse> getAllSessions(){
-        List<RidingSessionResponse> allSessions = ridingSessionRepository.findAll()
+    public List<RidingSessionResponse> getAllSessions(SessionStatus status, SkillLevel skillLevel, LocalDate date){
+        List<RidingSession> allSessions;
+        if(status!=null){
+            allSessions= ridingSessionRepository.findBySessionStatus(status);
+        }else if(skillLevel != null){
+            allSessions = ridingSessionRepository.findBySkillLevel(skillLevel);
+        }else if(date != null){
+            allSessions = ridingSessionRepository.findByDate(date);
+        }else{
+            allSessions = ridingSessionRepository.findAll();
+        }
+        List<RidingSessionResponse> sessions = allSessions
                 .stream()
                 .map(ridingSessionMapper::toResponse)
                 .toList();
-        if(allSessions.isEmpty()){
+        if(sessions.isEmpty()){
             throw new InformationNotFoundException("the list is empty, no riding sessions");
         }
-        return allSessions;
+        return sessions;
     }
 
 
