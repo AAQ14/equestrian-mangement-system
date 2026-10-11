@@ -13,7 +13,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 /**
- * The JSON that clients send to create or update a riding session.
+ * The JSON that clients send to create a riding session.
  */
 @AllArgsConstructor
 @NoArgsConstructor
