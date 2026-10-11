@@ -64,8 +64,14 @@ public class AuthService {
 
 
     /**
-     * Resets the user's password after validating the password reset code.
-     **/
+     * Sets a new password for the account named in a valid password reset token.
+     * The token is issued only after the user has entered a correct reset code.
+     *
+     * @param resetToken the password reset token received after verifying the reset code.
+     * @param password the new password, which is hashed before it is saved.
+     * @throws InvalidCodeException if the token is invalid, expired or was not issued for a password reset.
+     * @throws InformationNotFoundException if no user matches the email stored in the token.
+     */
     @Transactional
     public void resetPassword(String resetToken, String password){
         if(!jwtUtil.isTokenValid(resetToken, "PASSWORD_RESET")){

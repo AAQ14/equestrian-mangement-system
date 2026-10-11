@@ -14,6 +14,11 @@ import java.nio.charset.StandardCharsets;
 import java.security.Key;
 import java.util.Date;
 
+/**
+ * Creates and reads the signed JWTs used by the application.
+ * Each token carries a purpose claim, so a token made for one job (such as a password reset)
+ * cannot be used for another (such as logging in).
+ */
 @Component
 public class JWTUtil {
 
@@ -37,6 +42,11 @@ public class JWTUtil {
     private long jwtVerificationExpirationMs;
 
 
+    /**
+     * Builds the HMAC signing key from the configured secret.
+     *
+     * @return the key used to sign and verify tokens.
+     */
     private Key getSigningKey(){
         byte[] bytes = secret.getBytes(StandardCharsets.UTF_8);
         return Keys.hmacShaKeyFor(bytes);
@@ -127,9 +137,11 @@ public class JWTUtil {
 
 
     /**
-
-     * @param email
-     * @return
+     * Creates the token used in the password reset flow.
+     * It has the PASSWORD_RESET purpose, so it cannot be used to log in.
+     *
+     * @param email the email of the account being recovered, stored as the token subject.
+     * @return the signed token as a string.
      */
     public String generatePasswordResetToken(String email){
         return Jwts.builder()

@@ -2,6 +2,7 @@ package com.ga.equestrian.controller;
 
 import com.ga.equestrian.dto.request.*;
 import com.ga.equestrian.dto.response.LoginResponse;
+import com.ga.equestrian.dto.response.MessageResponse;
 import com.ga.equestrian.dto.response.ResetPasswordTokenResponse;
 import com.ga.equestrian.dto.response.UserResponse;
 import com.ga.equestrian.service.AuthService;
@@ -47,9 +48,9 @@ public class AuthController {
      * @return a confirmation message.
      */
     @PostMapping("/users/verify")
-    public ResponseEntity<String> verify(@Valid @RequestBody VerifyEmailRequest verifyEmailRequest){
+    public ResponseEntity<MessageResponse> verify(@Valid @RequestBody VerifyEmailRequest verifyEmailRequest){
         verificationService.verifyEmail(verifyEmailRequest.getEmail(), verifyEmailRequest.getCode());
-        return ResponseEntity.ok("Email verified successfully.");
+        return ResponseEntity.ok(new MessageResponse("Email verified successfully."));
     }
 
     /**
@@ -60,9 +61,9 @@ public class AuthController {
      * @return a confirmation message.
      */
     @PostMapping("/users/forgot-password")
-    public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest){
+    public ResponseEntity<MessageResponse> forgotPassword(@Valid @RequestBody ForgotPasswordRequest forgotPasswordRequest){
         verificationService.sendPasswordResetCode(forgotPasswordRequest.getEmail());
-        return ResponseEntity.ok("Password reset code sent successfully.");
+        return ResponseEntity.ok(new MessageResponse("Password reset code sent successfully."));
     }
 
     /**
@@ -87,12 +88,12 @@ public class AuthController {
      * @return a confirmation message.
      */
     @PostMapping("/users/reset-password")
-    public ResponseEntity<String> resetPassword(@RequestHeader("Authorization") String authorization, @Valid @RequestBody ResetPasswordRequest request){
+    public ResponseEntity<MessageResponse> resetPassword(@RequestHeader("Authorization") String authorization, @Valid @RequestBody ResetPasswordRequest request){
         String resetToken = authorization.replace("Bearer ", "");
 
         authService.resetPassword(resetToken, request.getPassword());
 
-        return ResponseEntity.ok("Password reset successfully");
+        return ResponseEntity.ok(new MessageResponse("Password reset successfully"));
     }
 
     /**
@@ -120,9 +121,9 @@ public class AuthController {
      * @return a confirmation message.
      */
     @PutMapping("/users/change-password")
-    public ResponseEntity<String> changePassword(Authentication authentication, @Valid @RequestBody ChangePasswordRequest request){
+    public ResponseEntity<MessageResponse> changePassword(Authentication authentication, @Valid @RequestBody ChangePasswordRequest request){
         authService.changePassword(authentication.getName(), request.getCurrentPassword(), request.getNewPassword());
-        return ResponseEntity.ok("Password changed successfully.");
+        return ResponseEntity.ok(new MessageResponse("Password changed successfully."));
     }
 
 }
