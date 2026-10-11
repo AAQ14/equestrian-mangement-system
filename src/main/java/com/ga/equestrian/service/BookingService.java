@@ -1,6 +1,7 @@
 package com.ga.equestrian.service;
 
 import com.ga.equestrian.dto.request.BookingRequest;
+import com.ga.equestrian.dto.request.UpdateBookingRequest;
 import com.ga.equestrian.dto.response.BookingResponse;
 import com.ga.equestrian.exception.InformationExistException;
 import com.ga.equestrian.exception.InformationNotFoundException;
@@ -138,6 +139,30 @@ public class BookingService {
         return bookingMapper.toResponse(findAccessibleBooking(id, signedInUser));
     }
 
+    /**
+     * Changes the status of a booking, following the allowed transitions.
+     * Clients can only cancel their own bookings; instructors and admins can apply any allowed change.
+     *
+     * @param id the booking id.
+     * @param email the email of the signed-in user, taken from the JWT.
+     * @param request  the new status.
+     * @return the updated booking as a response DTO.
+     * @throws InformationNotFoundException if the booking or the signed-in user does not exist.
+     * @throws AccessDeniedException if a client tries to change another user's booking or to set a status other than CANCELLED.
+     * @throws InvalidBookingException if the status change is not allowed.
+     */
+    @Transactional
+    public BookingResponse updateBooking(Long id, String email, UpdateBookingRequest request){
+        User signedInUser = findUserByEmail(email);
+        Booking booking = findAccessibleBooking(id, signedInUser);
+        if(signedInUser.getRole() == Role.CLIENT && request.getBookingStatus() != BookingStatus.CANCELLED){
+            throw new AccessDeniedException("Clients can only cancel their bookings.");
+        }
+        changeStatus(booking, request.getBookingStatus());
+        log.info("User {} changed booking {} to {}", signedInUser.getId(), booking.getId(), booking.getBookingStatus());
+        return bookingMapper.toResponse(booking);
+    }
+
 
     /**
      * Finds a booking and checks that the signed-in user is allowed to access it.
@@ -155,5 +180,33 @@ public class BookingService {
             throw new AccessDeniedException("You can only access your own bookings.");
         }
         return booking;
+    }
+
+
+    private void changeStatus(Booking booking, BookingStatus newStatus){
+        BookingStatus currentStatus = booking.getBookingStatus();
+
+        if(currentStatus == BookingStatus.PENDING){
+            if(newStatus != BookingStatus.CONFIRMED && newStatus!=BookingStatus.CANCELLED) {
+                throw new InvalidBookingException("Invalid booking status change.");
+            }
+        }else if (currentStatus == BookingStatus.CONFIRMED) {
+            if (newStatus != BookingStatus.COMPLETED &&
+                    newStatus != BookingStatus.CANCELLED) {
+                throw new InvalidBookingException("Invalid booking status change.");
+            }
+        }else {
+            throw new InvalidBookingException("This booking cannot be changed.");
+        }
+
+        booking.setBookingStatus(newStatus);
+
+        if (newStatus == BookingStatus.CANCELLED) {
+            RidingSession session = booking.getRidingSession();
+
+            if (session.getSessionStatus() == SessionStatus.FULL) {
+                session.setSessionStatus(SessionStatus.AVAILABLE);
+            }
+        }
     }
 }
