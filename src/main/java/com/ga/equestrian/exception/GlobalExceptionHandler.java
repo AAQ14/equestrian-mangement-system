@@ -157,6 +157,18 @@ public class GlobalExceptionHandler{
     }
 
     /**
+     * Handles rejected password changes, such as a wrong current password.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 400 response with error details.
+     */
+    @ExceptionHandler(InvalidPasswordException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidPassword(InvalidPasswordException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.BAD_REQUEST, "INVALID_PASSWORD", ex.getMessage(), request);
+    }
+
+    /**
      * Builds an error response.
      *
      * @param status the HTTP status to return.
