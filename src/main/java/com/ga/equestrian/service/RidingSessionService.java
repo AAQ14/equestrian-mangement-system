@@ -1,6 +1,7 @@
 package com.ga.equestrian.service;
 
 import com.ga.equestrian.dto.request.RidingSessionRequest;
+import com.ga.equestrian.dto.request.UpdateRidingSessionRequest;
 import com.ga.equestrian.dto.response.RidingSessionResponse;
 import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.mapper.RidingSessionMapper;
@@ -92,7 +93,7 @@ public class RidingSessionService {
      * @throws InformationNotFoundException if the session or the instructor does not exit.
      */
     @Transactional
-    public RidingSessionResponse updateSession(Long id, RidingSessionRequest request){
+    public RidingSessionResponse updateSession(Long id, UpdateRidingSessionRequest request){
         RidingSession ridingSession = ridingSessionRepository.findById(id).orElseThrow(
                 ()-> new InformationNotFoundException("Riding session with id " + id + " not found.")
         );
@@ -100,13 +101,27 @@ public class RidingSessionService {
         Instructor instructor = instructorRepository.findById(request.getInstructorId()).orElseThrow(
                 () -> new InformationNotFoundException("Instructor with id " + request.getInstructorId() + " not found."));
 
-        ridingSession.setInstructor(instructor);
-        ridingSession.setDate(request.getDate());
-        ridingSession.setStartTime(request.getStartTime());
-        ridingSession.setEndTime(request.getEndTime());
-        ridingSession.setPrice(request.getPrice());
-        ridingSession.setSkillLevel(request.getSkillLevel());
-        ridingSession.setCapacity(request.getCapacity());
+        if(request.getDate()!=null){
+            ridingSession.setDate(request.getDate());
+        }
+        if(request.getInstructorId()!=null){
+            ridingSession.setInstructor(instructor);
+        }
+        if(request.getStartTime()!=null){
+            ridingSession.setStartTime(request.getStartTime());
+        }
+        if(request.getEndTime()!=null){
+            ridingSession.setEndTime(request.getEndTime());
+        }
+        if(request.getPrice()!=null){
+            ridingSession.setPrice(request.getPrice());
+        }
+        if(request.getSkillLevel()!=null){
+            ridingSession.setSkillLevel(request.getSkillLevel());
+        }
+        if(request.getCapacity()!=null){
+            ridingSession.setCapacity(request.getCapacity());
+        }
         ridingSessionRepository.save(ridingSession);
         return ridingSessionMapper.toResponse(ridingSession);
     }
