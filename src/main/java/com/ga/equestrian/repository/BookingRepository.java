@@ -30,6 +30,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      * @param bookingStatus the status to exclude.
      * @return true if such a booking exists, false otherwise.
      */
-    boolean exitsByUserIdAndRidingSessionIdAndBookingStatusNot(Long userId, Long sessionId, BookingStatus bookingStatus);
+    boolean existsByUserIdAndRidingSessionIdAndBookingStatusNot(Long userId, Long sessionId, BookingStatus bookingStatus);
 
 }

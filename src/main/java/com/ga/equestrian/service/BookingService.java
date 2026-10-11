@@ -68,7 +68,7 @@ public class BookingService {
                 throw new InvalidBookingException("This session has already started or finished.");
             }
 
-            if(bookingRepository.exitsByUserIdAndRidingSessionIdAndBookingStatusNot(bookedUser.getId(), session.getId(), BookingStatus.CANCELLED)){
+            if(bookingRepository.existsByUserIdAndRidingSessionIdAndBookingStatusNot(bookedUser.getId(), session.getId(), BookingStatus.CANCELLED)){
                 throw new InformationExistException("This user already has a booking for this session.");
             }
 
