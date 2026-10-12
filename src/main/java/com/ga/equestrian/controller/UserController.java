@@ -98,4 +98,18 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
+    /**
+     * Reactivates an inactive user. Admins only.
+     * Returns 200 on success, 403 if the caller is not an admin, 404 if the user does not exist,
+     * and 422 if the user is not inactive.
+     *
+     * @param id the id of the user to reactivate.
+     * @param authentication the signed-in admin, set by the JWT filter.
+     * @return the reactivated user.
+     */
+    @PutMapping("/{id}/activate")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserResponse> activateUser(@PathVariable Long id, Authentication authentication) {
+        return ResponseEntity.status(HttpStatus.OK).body(userService.activateUser(authentication.getName(), id));
+    }
 }

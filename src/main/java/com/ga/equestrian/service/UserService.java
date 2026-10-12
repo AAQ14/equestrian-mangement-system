@@ -149,4 +149,30 @@ public class UserService {
         log.info("Admin {} deactivated user {}", admin.getId(), user.getId());
         return userMapper.toResponse(user);
     }
+
+
+    /**
+     * Reactivates an inactive user. The status goes back to ACTIVE.
+     *
+     * @param adminEmail the email of the signed-in admin, taken from the JWT.
+     * @param id the id of the user to reactivate.
+     * @return the reactivated user.
+     * @throws InformationNotFoundException if the admin or the user does not exist.
+     * @throws InvalidUserActionException if the user is not inactive.
+     */
+    @Transactional
+    public UserResponse activateUser(String adminEmail, Long id){
+        User admin = userRepository.findByEmail(adminEmail).orElseThrow(
+                () -> new InformationNotFoundException("User with email " + adminEmail + " not found.")
+        );
+        User user = userRepository.findById(id).orElseThrow(
+                ()-> new InformationNotFoundException("User with id " + id + " not found.")
+        );
+        if(user.getUserStatus() != UserStatus.INACTIVE){
+            throw new InvalidUserActionException("Only inactive users can be reactivated.");
+        }
+        user.setUserStatus(UserStatus.ACTIVE);
+        log.info("Admin {} reactivated user {}", admin.getId(), user.getId());
+        return userMapper.toResponse(user);
+    }
 }
