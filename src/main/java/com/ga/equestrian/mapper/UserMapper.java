@@ -9,7 +9,13 @@ import org.springframework.stereotype.Component;
  */
 @Component
 public class UserMapper {
+    /**
+     * Converts a user entity into its response DTO.
+     *
+     * @param user the user entity.
+     * @return the user response, without the password.
+     */
     public UserResponse toResponse(User user){
-        return new UserResponse(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getPhone(), user.getProfilePicture(), user.getRole(), user.getUserStatus(), user.getCreatedAt());
+        return new UserResponse(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getPhone(), user.getProfilePicture(), user.getRole(), user.getUserStatus(), user.getCreatedAt(), user.getUpdatedAt());
     }
 }
