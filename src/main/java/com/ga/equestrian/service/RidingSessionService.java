@@ -7,8 +7,10 @@ import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.mapper.RidingSessionMapper;
 import com.ga.equestrian.model.entity.Instructor;
 import com.ga.equestrian.model.entity.RidingSession;
+import com.ga.equestrian.model.enums.NotificationType;
 import com.ga.equestrian.model.enums.SessionStatus;
 import com.ga.equestrian.model.enums.SkillLevel;
+import com.ga.equestrian.repository.BookingRepository;
 import com.ga.equestrian.repository.InstructorRepository;
 import com.ga.equestrian.repository.RidingSessionRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +26,8 @@ public class RidingSessionService {
     private final RidingSessionRepository ridingSessionRepository;
     private final InstructorRepository instructorRepository;
     private final RidingSessionMapper ridingSessionMapper;
+    private final BookingRepository bookingRepository;
+    private final NotificationService notificationService;
 
 
     /**
@@ -115,13 +119,12 @@ public class RidingSessionService {
                 ()-> new InformationNotFoundException("Riding session with id " + id + " not found.")
         );
 
-        Instructor instructor = instructorRepository.findById(request.getInstructorId()).orElseThrow(
-                () -> new InformationNotFoundException("Instructor with id " + request.getInstructorId() + " not found."));
 
         if(request.getDate()!=null){
             ridingSession.setDate(request.getDate());
         }
-        if(request.getInstructorId()!=null){
+        if(request.getInstructorId()!=null){ Instructor instructor = instructorRepository.findById(request.getInstructorId()).orElseThrow(
+                () -> new InformationNotFoundException("Instructor with id " + request.getInstructorId() + " not found."));
             ridingSession.setInstructor(instructor);
         }
         if(request.getStartTime()!=null){
@@ -140,6 +143,9 @@ public class RidingSessionService {
             ridingSession.setCapacity(request.getCapacity());
         }
         ridingSessionRepository.save(ridingSession);
+        notificationService.createAndSend(ridingSession.getInstructor().getUser(),
+                "Your session on " + ridingSession.getDate() + " was updated.",
+                NotificationType.SESSION_UPDATED);
         return ridingSessionMapper.toResponse(ridingSession);
     }
 

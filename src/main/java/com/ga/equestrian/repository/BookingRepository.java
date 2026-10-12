@@ -56,4 +56,13 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      */
     boolean existsByUserIdAndRidingSessionDateAndRidingSessionStartTimeLessThanAndRidingSessionEndTimeGreaterThanAndBookingStatusIn(Long userId, LocalDate date, LocalTime endTime, LocalTime startTime, List<BookingStatus> statuses);
 
+    /**
+     * Finds the bookings of a session that have one of the given statuses.
+     *
+     * @param sessionId the id of the riding session.
+     * @param statuses the booking statuses to include.
+     * @return the matching bookings, or an empty list if there are none.
+     */
+    List<Booking> findByRidingSessionIdAndBookingStatusIn(Long sessionId, List<BookingStatus> statuses);
+
 }
