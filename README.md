@@ -90,7 +90,7 @@ https://lucid.app/lucidchart/c937fbbc-8158-4a06-a4d1-cc7a851c59d9/edit?view_item
 
 ## API Documentation
 
-Interactive documentation:
+Interactive documentation: http://localhost:8000/swagger-ui/index.html#/
 
 ### Authentication
 
@@ -210,3 +210,61 @@ Interactive documentation:
    mvn spring-boot:run
    ```
 7. **Access the API:** `http://localhost:8000`
+8. **Access Swagger/OpenAPI:**   `http://localhost:8000/swagger-ui/index.html#/`
+
+## User stories
+Client
+
+Account
+As a visitor, I want to register an account, so that I can book riding sessions.
+As a new user, I want to verify my email with a code, so that my account is activated and I can log in.
+As a client, I want to log in, so that I can access my bookings securely.
+As a client who forgot my password, I want to receive a reset code by email, so that I can recover my account.
+As a client, I want to change my password, so that I can keep my account secure.
+As a client, I want to update my name, phone number and profile picture, so that my details stay correct.
+As a client, I want to browse available riding sessions, so that I can choose one that suits me.
+As a client, I want to filter sessions by status, skill level or date, so that I can find a suitable session quickly.
+As a client, I want to view the details of a session, so that I know the time, price and level before booking.
+As a client, I want to book an available session, so that I can reserve my place.
+As a client, I want to be prevented from booking a full session, so that sessions are never overbooked.
+As a client, I want to be prevented from booking two overlapping sessions, so that I do not double-book myself.
+As a client, I want to view my bookings and filter them by status, so that I can track my reservations.
+As a client, I want to cancel my booking, so that I can free my spot when I cannot attend.
+As a client, I want to see only my own bookings, so that my information stays private.
+As a client, I want to receive a real-time notification when my booking is confirmed or cancelled, so that I know its status without refreshing.
+As a client, I want to view my past notifications, so that I do not miss anything that happened while I was offline.
+As a client, I want to receive an email when I register or reset my password, so that I can complete those actions.
+As an instructor, I want to create riding sessions with a date, time, price, skill level and capacity, so that clients can book them.
+As an instructor, I want to update my sessions, so that I can correct details or reschedule.
+As an instructor, I want to be notified when my session is updated by someone else, so that I always know what changed.
+As an instructor, I want to confirm or complete bookings, so that clients know their reservation is accepted.
+As an instructor, I want to book a session on behalf of a client, so that I can help clients who ask in person.
+As an instructor, I want to view all bookings, so that I can prepare for my sessions.
+As an admin, I want to view all users and filter them by status, so that I can manage the centre’s accounts.
+As an admin, I want to deactivate a user without deleting their data, so that I can block access while keeping the history.
+As an admin, I want to reactivate an inactive user, so that I can restore access when needed.
+As an admin, I want to update any user’s profile, so that I can correct mistakes for clients.
+As an admin, I want to create and manage instructor profiles, so that the right people can run sessions.
+As an admin, I want to manage horses and their images, so that the centre’s stable is documented.
+As an admin, I want to create, update and cancel any session, so that I can run the centre’s schedule.
+As an admin, I want to change any booking’s status, so that I can resolve problems for clients.
+As a system owner, I want passwords stored as hashes, so that a data leak does not expose real passwords.
+As a system owner, I want protected routes to require a valid JWT, so that only signed-in users can use them.
+As a system owner, I want roles to control access to endpoints, so that clients cannot use admin features.
+As a system owner, I want unverified and inactive users blocked from logging in, so that only valid accounts use the system.
+As a system owner, I want one-time codes to expire and lock after wrong attempts, so that they cannot be guessed.
+As a system owner, I want uploaded files validated by type and size, so that harmful files are rejected.
+As a system owner, I want consistent JSON error responses, so that API users understand what went wrong.
+As a developer, I want the API documented with Swagger, so that I can understand and test the endpoints.
+
+## Credits & External Resources
+
+| Resource | URL | Used for |
+|---|---|---|
+| Spring Boot Documentation | https://docs.spring.io/spring-boot/ | Project setup and configuration |
+| Spring Security Documentation | https://docs.spring.io/spring-security/reference/ | JWT filter, method security |
+| Spring Data JPA Documentation | https://docs.spring.io/spring-data/jpa/reference/ | Derived query methods |
+| JJWT | https://github.com/jwtk/jjwt | Creating and validating JWTs |
+| Claude (Anthropic) | https://claude.ai | Code reviews, explanations and suggestions; I tested and can explain all submitted code |
+| ADD_MORE | ADD_URL | ADD_PURPOSE |
+
