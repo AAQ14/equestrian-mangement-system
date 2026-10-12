@@ -10,10 +10,7 @@ import com.ga.equestrian.mapper.BookingMapper;
 import com.ga.equestrian.model.entity.Booking;
 import com.ga.equestrian.model.entity.RidingSession;
 import com.ga.equestrian.model.entity.User;
-import com.ga.equestrian.model.enums.BookingStatus;
-import com.ga.equestrian.model.enums.Role;
-import com.ga.equestrian.model.enums.SessionStatus;
-import com.ga.equestrian.model.enums.UserStatus;
+import com.ga.equestrian.model.enums.*;
 import com.ga.equestrian.repository.BookingRepository;
 import com.ga.equestrian.repository.RidingSessionRepository;
 import com.ga.equestrian.repository.UserRepository;
@@ -38,6 +35,7 @@ public class BookingService {
     private final RidingSessionRepository ridingSessionRepository;
     private final UserRepository userRepository;
     private final BookingMapper bookingMapper;
+    private final NotificationService notificationService;
 
     @Transactional
     public BookingResponse createBooking(String email, BookingRequest request){
@@ -93,6 +91,8 @@ public class BookingService {
             }
         log.info("User {} created booking {} for session {} (booked user {})",
                 signedInUser.getId(), savedBooking.getId(), session.getId(), bookedUser.getId());
+
+            notificationService.createAndSend(bookedUser,  "Your booking for " + session.getDate() + " was created and is pending confirmation.", NotificationType.BOOKING_CREATED);
             return bookingMapper.toResponse(savedBooking);
 
     }
@@ -244,6 +244,16 @@ public class BookingService {
             if (session.getSessionStatus() == SessionStatus.FULL) {
                 session.setSessionStatus(SessionStatus.AVAILABLE);
             }
+        }
+        if (newStatus == BookingStatus.CONFIRMED) {
+            notificationService.createAndSend(booking.getUser(),
+                    "Your booking for " + booking.getRidingSession().getDate() + " was confirmed.",
+                    NotificationType.BOOKING_CONFIRMED);
+        }
+        if (newStatus == BookingStatus.CANCELLED) {
+            notificationService.createAndSend(booking.getUser(),
+                    "Your booking for " + booking.getRidingSession().getDate() + " was cancelled.",
+                    NotificationType.BOOKING_CANCELLED);
         }
     }
 }
