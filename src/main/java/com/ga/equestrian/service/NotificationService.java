@@ -69,7 +69,7 @@ public class NotificationService {
      * @throws InformationNotFoundException if the user does not exist.
      */
     @Transactional(readOnly = true)
-    public List<NotificationResponse> getMyNotification(String email){
+    public List<NotificationResponse> getMyNotifications(String email){
         User user = userRepository.findByEmail(email).orElseThrow(
                 ()->new InformationNotFoundException("User with this email is not found: " + email)
         );
