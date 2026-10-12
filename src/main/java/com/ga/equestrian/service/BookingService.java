@@ -74,6 +74,11 @@ public class BookingService {
                 throw new InformationExistException("This user already has a booking for this session.");
             }
 
+             if(bookingRepository.existsByUserIdAndRidingSessionDateAndRidingSessionStartTimeLessThanAndRidingSessionEndTimeGreaterThanAndBookingStatusIn(
+                bookedUser.getId(), session.getDate(), session.getEndTime(), session.getStartTime(), SEAT_HOLDING_STATUSES)){
+                 throw new InformationExistException("This user already has a booking that overlaps this session.");
+             }
+
             long takenSpots = bookingRepository.countByRidingSessionIdAndBookingStatusIn(session.getId(), SEAT_HOLDING_STATUSES);
             if(takenSpots>= session.getCapacity()){
                 throw new InformationExistException("Riding session with id " + session.getId() + " is fully booked.");

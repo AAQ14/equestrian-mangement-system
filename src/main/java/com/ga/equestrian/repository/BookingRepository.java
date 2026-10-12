@@ -4,6 +4,8 @@ import com.ga.equestrian.model.entity.Booking;
 import com.ga.equestrian.model.enums.BookingStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 /**
@@ -42,5 +44,16 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
 
     List<Booking> findByBookingStatus(BookingStatus bookingStatus);
     List<Booking> findByUserIdAndBookingStatus(Long userId, BookingStatus bookingStatus);
+    /**
+     * Checks whether a user has an active booking for a session that overlaps the given time.
+     *
+     * @param userId the id of the user.
+     * @param date the session date.
+     * @param endTime the end time of the new session.
+     * @param startTime the start time of the new session.
+     * @param statuses the booking statuses that hold a spot.
+     * @return true if an overlapping booking exists, false otherwise.
+     */
+    boolean existsByUserIdAndRidingSessionDateAndRidingSessionStartTimeLessThanAndRidingSessionEndTimeGreaterThanAndBookingStatusIn(Long userId, LocalDate date, LocalTime endTime, LocalTime startTime, List<BookingStatus> statuses);
 
 }

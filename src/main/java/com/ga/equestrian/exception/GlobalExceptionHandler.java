@@ -169,6 +169,18 @@ public class GlobalExceptionHandler{
     }
 
     /**
+     * Handles actions on users that are not allowed, such as an admin deactivating their own account.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 422 response with error details.
+     */
+    @ExceptionHandler(InvalidUserActionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidUserAction(InvalidUserActionException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_USER_ACTION", ex.getMessage(), request);
+    }
+
+    /**
      * Builds an error response.
      *
      * @param status the HTTP status to return.

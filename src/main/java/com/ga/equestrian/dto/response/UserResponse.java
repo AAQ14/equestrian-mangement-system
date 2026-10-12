@@ -8,17 +8,19 @@ import lombok.Getter;
 import java.time.LocalDateTime;
 
 /**
- * The user data that is returned to the clients.
+ * The JSON that the API returns for a user.
  */
 @AllArgsConstructor
 @Getter
 public class UserResponse {
     private Long id;
-    private String firstName, lastName;
+    private String firstName;
+    private String lastName;
     private String email;
     private String phone;
     private String profilePicture;
     private Role role;
     private UserStatus userStatus;
     private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
 }
