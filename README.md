@@ -232,6 +232,18 @@ Interactive documentation: http://localhost:8000/swagger-ui/index.html#/
 - As a client, I want to receive a real-time notification when my booking is confirmed or cancelled, so that I know its status without refreshing.
 - As a client, I want to view my past notifications, so that I do not miss anything that happened while I was offline.
 - As a client, I want to receive an email when I register or reset my password, so that I can complete those actions.
+- As a client, I want to browse upcoming tournaments, so that I can choose one to attend.
+- As a clinet, I want to view tournament's details and seat map, so that I can see which seats are free before I buy.
+- As a client, I want to buy a ticket for a specific available seat, so that I can reserve my place at the tournament.
+- As a client, I want to view my tickets, so that I can track what I bought.
+- As a client, I want to cancel my ticket, so that the seat becomes available again.
+- As a client, I want to pay for my ticket, so that my purchase is confirmed.
+- As a client, I want the system to prevent another user from buying the same seat at the same time, so that a seat is never sold twice.
+- As a client, I want a session to never be overbooked when many people book at once, so that capacity is always respected.
+- As a client, I want to see seats become unavailable live, so that I don’t pick a seat that was just taken.
+- As a client, I want to receive a notification when my ticket is pending, confirmed or cancelled, so that I know its status.
+- As a client, I want to get a clear conflict message if someone else takes my seat first, so that I can pick another one.
+As a client, I want ticket emails to be sent, so that my purchase request responds quickly.
 
 ### Instructor
 - As an instructor, I want to create riding sessions with a date, time, price, skill level and capacity, so that clients can book them.
@@ -250,16 +262,22 @@ Interactive documentation: http://localhost:8000/swagger-ui/index.html#/
 - As an admin, I want to manage horses and their images, so that the centre’s stable is documented.
 - As an admin, I want to create, update and cancel any session, so that I can run the centre’s schedule.
 - As an admin, I want to change any booking’s status, so that I can resolve problems for clients.
+- As an admin, I want to create, update and cancel tournaments, so that I can run the centre’s events.
+- As an admin, I want to view all tickets for a tournament, so that I can see who is attending.
+- As an admin, I want to set the number of seats when I create a tournament, so that the seats are generated automatically.
+- As an admin, I want conflicts and cancellations recorded in an audit log, so that I can review what happened.
 
 ### Developer
-As a system owner, I want passwords stored as hashes, so that a data leak does not expose real passwords.
-As a system owner, I want protected routes to require a valid JWT, so that only signed-in users can use them.
-As a system owner, I want roles to control access to endpoints, so that clients cannot use admin features.
-As a system owner, I want unverified and inactive users blocked from logging in, so that only valid accounts use the system.
-As a system owner, I want one-time codes to expire and lock after wrong attempts, so that they cannot be guessed.
-As a system owner, I want uploaded files validated by type and size, so that harmful files are rejected.
-As a system owner, I want consistent JSON error responses, so that API users understand what went wrong.
-As a developer, I want the API documented with Swagger, so that I can understand and test the endpoints.
+- As a system owner, I want passwords stored as hashes, so that a data leak does not expose real passwords.
+- As a system owner, I want protected routes to require a valid JWT, so that only signed-in users can use them.
+- As a system owner, I want roles to control access to endpoints, so that clients cannot use admin features.
+- As a system owner, I want unverified and inactive users blocked from logging in, so that only valid accounts use the system.
+- As a system owner, I want one-time codes to expire and lock after wrong attempts, so that they cannot be guessed.
+- As a system owner, I want uploaded files validated by type and size, so that harmful files are rejected.
+- As a system owner, I want consistent JSON error responses, so that API users understand what went wrong.
+- As a developer, I want the API documented with Swagger, so that I can understand and test the endpoints.
+- As a developer, I want ticket purchases to run in a transaction with a locked seat, so that the database stays consistent under concurrent requests.
+- As a developer, I want important operations logged without sensitive data, so that I can diagnose failures safely.
 
 ## Credits & External Resources
 
