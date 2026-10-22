@@ -42,7 +42,7 @@ public class TournamentRequest {
 
     @NotNull(message = "number of seats is required")
     @Positive(message = "number of seats must be positive")
-    private Integer  numberOfSeats;
+    private Integer numberOfSeats;
 
     @NotNull(message = "ticket price is required")
     @Positive(message = "ticket price must be positive")
