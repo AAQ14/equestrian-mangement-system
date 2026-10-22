@@ -10,10 +10,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  *
@@ -36,5 +35,16 @@ public class TournamentController {
     public ResponseEntity<TournamentResponse> addTournament(@Valid @RequestBody TournamentRequest tournamentRequest){
         Tournament tournament = tournamentService.add(tournamentRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(tournamentMapper.toResponse(tournament));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping
+    public ResponseEntity<?> getAllTournament(){
+        List<Tournament> tournaments = tournamentService.getAllTournament();
+        if(tournaments.isEmpty()){
+            return ResponseEntity.status(HttpStatus.OK).body("There are no tournaments.");
+        }
+                List<TournamentResponse> responses = tournaments.stream().map(tournamentMapper::toResponse).toList();
+        return ResponseEntity.ok(responses);
     }
 }

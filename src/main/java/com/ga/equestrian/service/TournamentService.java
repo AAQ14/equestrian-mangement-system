@@ -1,6 +1,7 @@
 package com.ga.equestrian.service;
 
 import com.ga.equestrian.dto.request.TournamentRequest;
+import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.model.entity.Seat;
 import com.ga.equestrian.model.entity.Tournament;
 import com.ga.equestrian.repository.SeatRepository;
@@ -17,6 +18,11 @@ public class TournamentService {
     private final TournamentRepository tournamentRepository;
     private final SeatRepository seatRepository;
 
+    /**
+     *
+     * @param tournamentRequest
+     * @return
+     */
     public Tournament add(TournamentRequest tournamentRequest){
         Tournament tournament = new Tournament();
         tournament.setName(tournamentRequest.getName());
@@ -39,5 +45,13 @@ public class TournamentService {
 
         seatRepository.saveAll(seats);
         return tournament;
+    }
+
+    /**
+     *
+     * @return
+     */
+    public List<Tournament> getAllTournament(){
+        return tournamentRepository.findAll();
     }
 }
