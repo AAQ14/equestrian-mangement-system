@@ -20,7 +20,7 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "bookings")
 //uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "session_id"}))
-@ToString(exclude = {"user", "ridingSession"})
+@ToString(exclude = {"user", "ridingSession", "payment"})
 public class Booking {
     @Id
     @Column
@@ -36,6 +36,11 @@ public class Booking {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name="session_id", nullable = false)
     private RidingSession ridingSession;
+
+    @JsonIgnore
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "payment_id", unique = true)
+    private Payment payment;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
