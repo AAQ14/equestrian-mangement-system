@@ -22,17 +22,11 @@ import java.time.LocalDateTime;
 @Setter
 @Entity
 @Table(name = "payments")
-@ToString(exclude = "booking")
 public class Payment {
     @Id
     @Column
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @JsonIgnore
-    @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "booking_id", nullable = false, unique = true)
-    private Booking booking;
 
     @Column(precision = 10, scale = 2, nullable = false)
     private BigDecimal amount;
