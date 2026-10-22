@@ -49,7 +49,8 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth->
                         auth.requestMatchers("/auth/users",
-                                "/auth/users/login", "/auth/users/register", "/auth/users/verify",  "/auth/users/forgot-password", "/auth/users/verify-reset-code", "/auth/users/reset-password", "/auth/users/login", "/api/horses/create", "/api/horses/update/{id}", "/api/horses/delete/{id}", "/api/horses/all", "/api/horses/{id}", "/api/instructors/create", "/api/instructors", "/api/instructors/{id}", "/api/sessions/", "/api/sessions/**").permitAll().anyRequest().authenticated())
+                                "/auth/users/login", "/auth/users/register", "/auth/users/verify",  "/auth/users/forgot-password", "/auth/users/verify-reset-code", "/auth/users/reset-password", "/auth/users/login", "/api/sessions/",
+                                "/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**").permitAll().anyRequest().authenticated())
                 .addFilterBefore(jwtRequestFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
     }
