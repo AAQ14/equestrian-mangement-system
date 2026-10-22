@@ -1,6 +1,7 @@
 package com.ga.equestrian.controller;
 
 import com.ga.equestrian.dto.request.TournamentRequest;
+import com.ga.equestrian.dto.request.UpdateTournamentRequest;
 import com.ga.equestrian.dto.response.TournamentResponse;
 import com.ga.equestrian.mapper.TournamentMapper;
 import com.ga.equestrian.model.entity.Tournament;
@@ -46,5 +47,25 @@ public class TournamentController {
         }
                 List<TournamentResponse> responses = tournaments.stream().map(tournamentMapper::toResponse).toList();
         return ResponseEntity.ok(responses);
+    }
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}")
+    public ResponseEntity<TournamentResponse> updateTournament(@PathVariable Long id, @Valid @RequestBody UpdateTournamentRequest updateTournamentRequest){
+            Tournament tournament = tournamentService.updateTournament(id, updateTournamentRequest);
+            return ResponseEntity.status(HttpStatus.OK).body(tournamentMapper.toResponse(tournament));
+    }
+
+    /**
+     * Cancels a tournament and its active tickets.
+     *
+     * @param id the id of the tournament.
+     * @return the cancelled tournament.
+     */
+    @PreAuthorize("hasRole('ADMIN')")
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<TournamentResponse> cancelTournament(@PathVariable Long id){
+        Tournament tournament = tournamentService.cancelTournament(id);
+        return ResponseEntity.status(HttpStatus.OK).body(tournamentMapper.toResponse(tournament));
     }
 }
