@@ -1,0 +1,12 @@
+package com.ga.equestrian.repository;
+
+import com.ga.equestrian.model.entity.Ticket;
+import com.ga.equestrian.model.enums.TicketStatus;
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import java.util.List;
+
+public interface TicketRepository extends JpaRepository<Ticket, Long> {
+    List<Ticket> findAllByTournamentIdAndTicketStatusIn(Long id, List<TicketStatus> ticketStatus);
+
+}

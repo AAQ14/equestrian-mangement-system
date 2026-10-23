@@ -3,13 +3,11 @@ package com.ga.equestrian.model.entity;
 import com.ga.equestrian.model.enums.TournamentStatus;
 import com.ga.equestrian.model.enums.TournamentType;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -30,7 +28,6 @@ public class Tournament {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-
     @Column(nullable = false)
     private String name;
 
@@ -50,9 +47,12 @@ public class Tournament {
     @Column(nullable = false)
     private String description;
 
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal ticketPrice;
+
     @Column(nullable = false)
     @Enumerated(EnumType.STRING)
-    private TournamentStatus tournamentStatus;
+    private TournamentStatus tournamentStatus = TournamentStatus.UPCOMING;
 
     @Column(updatable = false)
     @CreationTimestamp
