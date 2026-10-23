@@ -7,6 +7,7 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @AllArgsConstructor
@@ -34,11 +35,14 @@ public class Seat {
     @Column(nullable = false)
     private SeatStatus seatStatus = SeatStatus.AVAILABLE;
 
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
+
     @Column(updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     @Column
     @UpdateTimestamp
-    private LocalDateTime updateAt;
+    private LocalDateTime updatedAt;
 }

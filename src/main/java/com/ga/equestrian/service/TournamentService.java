@@ -10,6 +10,7 @@ import com.ga.equestrian.model.entity.Seat;
 import com.ga.equestrian.model.entity.Ticket;
 import com.ga.equestrian.model.entity.Tournament;
 import com.ga.equestrian.model.enums.PaymentStatus;
+import com.ga.equestrian.model.enums.SeatStatus;
 import com.ga.equestrian.model.enums.TicketStatus;
 import com.ga.equestrian.model.enums.TournamentStatus;
 import com.ga.equestrian.repository.SeatRepository;
@@ -18,6 +19,7 @@ import com.ga.equestrian.repository.TournamentRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -51,6 +53,7 @@ public class TournamentService {
             Seat seat = new Seat();
             seat.setTournament(tournament);
             seat.setSeatNumber(i);
+            seat.setPrice(tournament.getTicketPrice());
             seats.add(seat);
         }
 
@@ -72,6 +75,7 @@ public class TournamentService {
      * @param updateTournamentRequest
      * @return
      */
+    @Transactional
     public Tournament updateTournament(Long id, UpdateTournamentRequest updateTournamentRequest){
         Tournament tournament = tournamentRepository.findById(id).orElseThrow(
                 () ->  new InformationNotFoundException("Tournament with this id " + id + " not found")
@@ -104,6 +108,13 @@ public class TournamentService {
             tournament.setVenue(updateTournamentRequest.getVenue());
         }
 
+        if(updateTournamentRequest.getTicketPrice() != null){
+            tournament.setTicketPrice(updateTournamentRequest.getTicketPrice());
+            List<Seat> seats = seatRepository.findAllByTournamentIdAndSeatStatus(tournament.getId(), SeatStatus.AVAILABLE);
+            seats.forEach(seat -> seat.setPrice(updateTournamentRequest.getTicketPrice()));
+            seatRepository.saveAll(seats);
+        }
+
         if(updateTournamentRequest.getNumberOfSeats()!=null){
             long current = seatRepository.countByTournamentId(id);
             if(updateTournamentRequest.getNumberOfSeats() < current){
@@ -114,13 +125,10 @@ public class TournamentService {
                 Seat seat = new Seat();
                 seat.setTournament(tournament);
                 seat.setSeatNumber(i);
+                seat.setPrice(tournament.getTicketPrice());
                 seats.add(seat);
             }
             seatRepository.saveAll(seats);
-        }
-
-        if(updateTournamentRequest.getTicketPrice() != null){
-            tournament.setTicketPrice(updateTournamentRequest.getTicketPrice());
         }
 
         if(updateTournamentRequest.getDescription() != null){
