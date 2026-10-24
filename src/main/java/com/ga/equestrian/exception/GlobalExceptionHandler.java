@@ -181,6 +181,18 @@ public class GlobalExceptionHandler{
     }
 
     /**
+     * Handles attempts to buy a seat that is already sold.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 409 response with error details.
+     */
+    @ExceptionHandler(SeatAlreadySoldException.class)
+    public ResponseEntity<ErrorResponse> handleSeatAlreadySold(SeatAlreadySoldException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.CONFLICT, "SEAT_ALREADY_SOLD", ex.getMessage(), request);
+    }
+
+    /**
      * Builds an error response.
      *
      * @param status the HTTP status to return.
