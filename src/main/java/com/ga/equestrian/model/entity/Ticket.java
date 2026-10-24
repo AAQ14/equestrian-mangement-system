@@ -28,17 +28,17 @@ public class Ticket {
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
     @JsonIgnore
-    @OneToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tournament_id", nullable = false)
     private Tournament tournament;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "seat_id")
+    @JoinColumn(name = "seat_id", nullable = false)
     private Seat seat;
 
     @Column(nullable = false, precision = 10, scale = 2)
@@ -59,5 +59,5 @@ public class Ticket {
 
     @Column
     @UpdateTimestamp
-    private LocalDateTime updateAt;
+    private LocalDateTime updatedAt;
 }
