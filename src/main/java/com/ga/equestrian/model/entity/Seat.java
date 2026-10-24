@@ -10,6 +10,11 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ *  Seat entity represents one seat of a tournament.
+ *  A seat is either AVAILABLE or SOLD, and its number is unique within its tournament.
+ *  Each seat has its own price, which is copied to the ticket when the seat is bought.
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
