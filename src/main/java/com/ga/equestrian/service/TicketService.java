@@ -1,20 +1,15 @@
 package com.ga.equestrian.service;
 
 import com.ga.equestrian.dto.request.TicketRequest;
-import com.ga.equestrian.exception.InformationNotFoundException;
-import com.ga.equestrian.exception.InvalidTournamentException;
-import com.ga.equestrian.exception.SeatAlreadySoldException;
-import com.ga.equestrian.model.entity.Seat;
-import com.ga.equestrian.model.entity.Ticket;
-import com.ga.equestrian.model.entity.Tournament;
-import com.ga.equestrian.model.entity.User;
+import com.ga.equestrian.exception.*;
+import com.ga.equestrian.model.entity.*;
+import com.ga.equestrian.model.enums.PaymentStatus;
 import com.ga.equestrian.model.enums.SeatStatus;
+import com.ga.equestrian.model.enums.TicketStatus;
 import com.ga.equestrian.model.enums.TournamentStatus;
-import com.ga.equestrian.repository.SeatRepository;
-import com.ga.equestrian.repository.TicketRepository;
-import com.ga.equestrian.repository.TournamentRepository;
-import com.ga.equestrian.repository.UserRepository;
+import com.ga.equestrian.repository.*;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +25,7 @@ public class TicketService {
     private final TournamentRepository tournamentRepository;
     private final SeatRepository seatRepository;
     private final UserRepository userRepository;
+    private final PaymentRepository paymentRepository;
 
     /**
      * Buys a ticket for a seat of a tournament. The price comes from the seat,
@@ -98,9 +94,60 @@ public class TicketService {
      */
     public List<Ticket> getAllTicketsByUser(String email) {
         User user = userRepository.findByEmail(email).orElseThrow(
-                ()->new InformationNotFoundException("User with this email " + email + " not found")
+                ()->new InformationNotFoundException("User with this email " + email + " not found.")
         );
 
         return ticketRepository.findAllByUserId(user.getId());
+    }
+
+
+    /**
+     * Cancels a ticket. Only the owner can cancel it, and only while its tournament is upcoming.
+     * The seat becomes available again.
+     *
+     * @param email the email of the signed-in user.
+     * @param id the id of the ticket.
+     * @return the cancelled ticket.
+     * @throws InformationNotFoundException if the ticket does not exist.
+     * @throws AccessDeniedException if the ticket belongs to another user.
+     * @throws TicketAlreadyCancelledException if the ticket is already cancelled.
+     * @throws TicketCancellationNotAllowedException if the tournament is not upcoming.
+     */
+    @Transactional
+    public Ticket cancelTicket(String email, Long id) {
+
+        Ticket ticket = ticketRepository.findById(id).orElseThrow(
+                ()->new InformationNotFoundException("Ticket with this id " + id + " not found.")
+        );
+
+        if(!ticket.getUser().getEmail().equals(email)){
+            throw new AccessDeniedException("You can only cancel your own tickets. ");
+        }
+
+        if(ticket.getTicketStatus().equals(TicketStatus.CANCELLED)){
+            throw new TicketAlreadyCancelledException("This ticket already cancelled.");
+        }
+
+        if(!ticket.getTournament().getTournamentStatus().equals(TournamentStatus.UPCOMING)){
+            throw new TicketCancellationNotAllowedException("Tickets can only be cancelled for upcoming tournaments.");
+        }
+
+        Seat seat = ticket.getSeat();
+        seat.setSeatStatus(SeatStatus.AVAILABLE);
+        seatRepository.save(seat);
+
+        ticket.setTicketStatus(TicketStatus.CANCELLED);
+//        Payment payment = paymentRepository.findById(ticket.getPayment().getId()).orElseThrow(
+//                () -> new InformationNotFoundException("payment with this id " + ticket.getPayment().getId() + " not found")
+//        );
+//        if(payment.getPaymentStatus().equals(PaymentStatus.COMPLETED)){
+//            payment.setPaymentStatus(PaymentStatus.REFUNDED);
+//        }else if(payment.getPaymentStatus().equals(PaymentStatus.PENDING)){
+//            payment.setPaymentStatus(PaymentStatus.FAILED);
+//        }
+//        paymentRepository.save(payment);
+        ticketRepository.save(ticket);
+
+        return ticket;
     }
 }

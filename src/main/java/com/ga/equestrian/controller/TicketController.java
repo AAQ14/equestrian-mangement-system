@@ -25,11 +25,12 @@ import java.util.List;
 public class TicketController {
     private final TicketService ticketService;
     private final TicketMapper ticketMapper;
-    private final UserRepository userRepository;
 
 
     /**
      * Buy a ticket for a seat of a tournament.
+     * Returns 201 on success, 404 if the seat or tournament is not found,
+     * 409 if the seat is already sold, and 422 if the tournament is not upcoming or ongoing.
      *
      * @param authentication the signed-in user.
      * @param tournamentId the id of the tournament.
@@ -45,6 +46,7 @@ public class TicketController {
 
     /**
      * Get all the tickets. Admin only.
+     * Returns 200 on success and 403 if the user is not an admin.
      *
      * @return a list of tickets.
      */
@@ -57,6 +59,7 @@ public class TicketController {
 
     /**
      * Gets the tickets of the signed-in user.
+     * Returns 200 on success, with an empty list if there are none.
      *
      * @param authentication the signed-in user.
      * @return a list of the user's tickets.
@@ -68,5 +71,18 @@ public class TicketController {
         return ResponseEntity.status(HttpStatus.OK).body(tickets);
     }
 
-
+    /**
+     * Cancel a ticket.
+     *  Returns 200 on success, 403 if the ticket belongs to another user, 404 if it is not found,
+     *  409 if it is already cancelled, and 422 if the tournament is not upcoming.
+     *
+     * @param id the id of the ticket.
+     * @return the canceled ticket.
+     */
+    @PreAuthorize("isAuthenticated()")
+    @PutMapping("/{id}/cancel")
+    public ResponseEntity<TicketResponse> cancelTicket(Authentication authentication, @PathVariable Long id) {
+        Ticket ticket = ticketService.cancelTicket(authentication.getName(), id);
+        return ResponseEntity.status(HttpStatus.OK).body(ticketMapper.toResponse(ticket));
+    }
 }
