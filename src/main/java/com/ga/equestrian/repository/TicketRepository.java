@@ -24,6 +24,6 @@ public interface TicketRepository extends JpaRepository<Ticket, Long> {
      * @param id the id of the user.
      * @return the user's tickets.
      */
-    List<Ticket> findALLByUserId(Long id);
+    List<Ticket> findAllByUserId(Long id);
 
 }
