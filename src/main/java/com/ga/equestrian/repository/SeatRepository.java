@@ -23,4 +23,13 @@ public interface SeatRepository extends JpaRepository<Seat, Long> {
      * @return a list of the seats.
      */
     List<Seat> findAllByTournamentIdAndSeatStatus(Long id, SeatStatus seatStatus);
+
+
+    /**
+     * finds all the seats of a tournament.
+     *
+     * @param id the id of the tournament.
+     * @return the seats of the tournament.
+     */
+    List<Seat> findAllByTournamentId(Long id);
 }

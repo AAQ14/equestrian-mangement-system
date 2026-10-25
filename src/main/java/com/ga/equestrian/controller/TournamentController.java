@@ -42,10 +42,10 @@ public class TournamentController {
     @GetMapping
     public ResponseEntity<?> getAllTournament(){
         List<Tournament> tournaments = tournamentService.getAllTournament();
-        if(tournaments.isEmpty()){
-            return ResponseEntity.status(HttpStatus.OK).body("There are no tournaments.");
-        }
-                List<TournamentResponse> responses = tournaments.stream().map(tournamentMapper::toResponse).toList();
+//        if(tournaments.isEmpty()){
+//            return ResponseEntity.status(HttpStatus.OK).body("There are no tournaments.");
+//        }
+        List<TournamentResponse> responses = tournaments.stream().map(tournamentMapper::toResponse).toList();
         return ResponseEntity.ok(responses);
     }
 
