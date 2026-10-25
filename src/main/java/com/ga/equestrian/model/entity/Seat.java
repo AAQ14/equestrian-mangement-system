@@ -7,8 +7,14 @@ import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+/**
+ *  Seat entity represents one seat of a tournament.
+ *  A seat is either AVAILABLE or SOLD, and its number is unique within its tournament.
+ *  Each seat has its own price, which is copied to the ticket when the seat is bought.
+ */
 @AllArgsConstructor
 @NoArgsConstructor
 @Getter
@@ -34,11 +40,14 @@ public class Seat {
     @Column(nullable = false)
     private SeatStatus seatStatus = SeatStatus.AVAILABLE;
 
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal price;
+
     @Column(updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     @Column
     @UpdateTimestamp
-    private LocalDateTime updateAt;
+    private LocalDateTime updatedAt;
 }

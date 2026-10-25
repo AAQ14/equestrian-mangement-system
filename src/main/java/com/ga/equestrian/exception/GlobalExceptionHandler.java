@@ -127,7 +127,7 @@ public class GlobalExceptionHandler{
      */
     @ExceptionHandler(InvalidBookingException.class)
     public ResponseEntity<ErrorResponse> handleInvalidBooking(InvalidBookingException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_BOOKING", ex.getMessage(), request);
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "INVALID_BOOKING", ex.getMessage(), request);
     }
 
 
@@ -177,8 +177,46 @@ public class GlobalExceptionHandler{
      */
     @ExceptionHandler(InvalidUserActionException.class)
     public ResponseEntity<ErrorResponse> handleInvalidUserAction(InvalidUserActionException ex, HttpServletRequest request){
-        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_USER_ACTION", ex.getMessage(), request);
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "INVALID_USER_ACTION", ex.getMessage(), request);
     }
+
+    /**
+     * Handles attempts to buy a seat that is already sold.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 409 response with error details.
+     */
+    @ExceptionHandler(SeatAlreadySoldException.class)
+    public ResponseEntity<ErrorResponse> handleSeatAlreadySold(SeatAlreadySoldException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.CONFLICT, "SEAT_ALREADY_SOLD", ex.getMessage(), request);
+    }
+
+    /**
+     * Handles attempts to cancel a ticket that is already cancelled.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 409 response with error details.
+     */
+    @ExceptionHandler(TicketAlreadyCancelledException.class)
+    public ResponseEntity<ErrorResponse> handleTicketAlreadyCancelled(TicketAlreadyCancelledException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.CONFLICT, "TICKET_ALREADY_CANCELLED", ex.getMessage(), request);
+    }
+
+    /**
+     * Handles attempts to cancel a ticket that is not allowed to be cancelled.
+     * E.g. the tournament status is anything else upcoming.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 422 response with error details.
+     */
+    @ExceptionHandler(TicketCancellationNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleTicketCancellationNotAllowed(TicketCancellationNotAllowedException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "TICKET_CANCELLATION_NOT_ALLOWED", ex.getMessage(), request);
+    }
+
 
     /**
      * Builds an error response.
