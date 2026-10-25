@@ -102,8 +102,8 @@ public class TicketService {
 
 
     /**
-     * Cancels a ticket. Only the owner can cancel it, and only while its tournament is upcoming.
-     * The seat becomes available again.
+     * Cancels a ticket for the signed-in user. Only the owner can cancel it,
+     * and only while its tournament is upcoming. The seat becomes available again.
      *
      * @param email the email of the signed-in user.
      * @param id the id of the ticket.
@@ -114,7 +114,7 @@ public class TicketService {
      * @throws TicketCancellationNotAllowedException if the tournament is not upcoming.
      */
     @Transactional
-    public Ticket cancelTicket(String email, Long id) {
+    public Ticket cancelTicketByUser(String email, Long id) {
 
         Ticket ticket = ticketRepository.findById(id).orElseThrow(
                 ()->new InformationNotFoundException("Ticket with this id " + id + " not found.")
@@ -123,6 +123,38 @@ public class TicketService {
         if(!ticket.getUser().getEmail().equals(email)){
             throw new AccessDeniedException("You can only cancel your own tickets. ");
         }
+        return cancel(ticket);
+    }
+
+    /**
+     * Cancels any ticket. Used by the admin, so there is no ownership check.
+     * The ticket can only be cancelled while its tournament is upcoming, and the seat becomes available again.
+     *
+     * @param id the id of the ticket.
+     * @return the cancelled ticket.
+     * @throws InformationNotFoundException if the ticket does not exist.
+     * @throws TicketAlreadyCancelledException if the ticket is already cancelled.
+     * @throws TicketCancellationNotAllowedException if the tournament is not upcoming.
+     */
+    @Transactional
+    public Ticket cancelTicket(Long id) {
+        Ticket ticket = ticketRepository.findById(id).orElseThrow(
+                ()->new InformationNotFoundException("Ticket with this id " + id + " not found.")
+        );
+        return cancel(ticket);
+
+    }
+
+    /**
+     * Applies the cancellation rules shared by the user and admin cancellations.
+     * Cancels the ticket and releases its seat.
+     *
+     * @param ticket the ticket to cancel, already locked by the caller.
+     * @return the cancelled ticket.
+     * @throws TicketAlreadyCancelledException if the ticket is already cancelled.
+     * @throws TicketCancellationNotAllowedException if the tournament is not upcoming.
+     */
+    private Ticket cancel(Ticket ticket){
 
         if(ticket.getTicketStatus().equals(TicketStatus.CANCELLED)){
             throw new TicketAlreadyCancelledException("This ticket already cancelled.");

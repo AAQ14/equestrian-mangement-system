@@ -72,17 +72,33 @@ public class TicketController {
     }
 
     /**
-     * Cancel a ticket.
-     *  Returns 200 on success, 403 if the ticket belongs to another user, 404 if it is not found,
-     *  409 if it is already cancelled, and 422 if the tournament is not upcoming.
+     * Cancels a ticket of the signed-in user.
+     * Returns 200 on success, 403 if the ticket belongs to another user, 404 if it is not found,
+     * 409 if it is already cancelled, and 422 if the tournament is not upcoming.
      *
+     * @param authentication the signed-in user.
      * @param id the id of the ticket.
-     * @return the canceled ticket.
+     * @return the cancelled ticket.
      */
     @PreAuthorize("isAuthenticated()")
+    @PutMapping("/{id}/cancel/my")
+    public ResponseEntity<TicketResponse> cancelTicketByUser(Authentication authentication, @PathVariable Long id) {
+        Ticket ticket = ticketService.cancelTicketByUser(authentication.getName(), id);
+        return ResponseEntity.status(HttpStatus.OK).body(ticketMapper.toResponse(ticket));
+    }
+
+    /**
+     * Cancels any ticket. Admin only.
+     * Returns 200 on success, 403 if the user is not an admin, 404 if the ticket is not found,
+     * 409 if it is already cancelled, and 422 if the tournament is not upcoming.
+     *
+     * @param id the id of the ticket.
+     * @return the cancelled ticket.
+     */
+    @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/{id}/cancel")
-    public ResponseEntity<TicketResponse> cancelTicket(Authentication authentication, @PathVariable Long id) {
-        Ticket ticket = ticketService.cancelTicket(authentication.getName(), id);
+    public ResponseEntity<TicketResponse> cancelTicket(@PathVariable Long id) {
+        Ticket ticket = ticketService.cancelTicket(id);
         return ResponseEntity.status(HttpStatus.OK).body(ticketMapper.toResponse(ticket));
     }
 }
