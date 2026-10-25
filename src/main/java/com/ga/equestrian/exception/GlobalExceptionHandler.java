@@ -193,6 +193,18 @@ public class GlobalExceptionHandler{
     }
 
     /**
+     * Handles attempts to cancel a ticket that is already cancelled.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 409 response with error details.
+     */
+    @ExceptionHandler(TicketAlreadyCancelledException.class)
+    public ResponseEntity<ErrorResponse> handleTicketAlreadyCancelled(TicketAlreadyCancelledException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.CONFLICT, "TICKET_ALREADY_CANCELLED", ex.getMessage(), request);
+    }
+
+    /**
      * Builds an error response.
      *
      * @param status the HTTP status to return.
