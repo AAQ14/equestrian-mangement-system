@@ -18,7 +18,7 @@ public class HorseAssignmentService {
     private final HorseAssignmentRepository horseAssignmentRepository;
     private final ConcurrentHashMap<Long, ReentrantLock> assignsLock = new ConcurrentHashMap<>();
 
-    public HorseAssignment assignHorse(Booking booking){
-
-    }
+//    public HorseAssignment assignHorse(Booking booking){
+//
+//    }
 }
