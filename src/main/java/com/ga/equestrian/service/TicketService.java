@@ -9,15 +9,20 @@ import com.ga.equestrian.model.enums.TicketStatus;
 import com.ga.equestrian.model.enums.TournamentStatus;
 import com.ga.equestrian.repository.*;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 /**
  * Service that handles buying and viewing tickets.
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TicketService {
@@ -26,6 +31,33 @@ public class TicketService {
     private final SeatRepository seatRepository;
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
+    private final ConcurrentHashMap<Long, ReentrantLock> seatLocks = new ConcurrentHashMap<>();
+    private final TransactionTemplate transactionTemplate;
+
+    public Ticket buyTicket(String email, Long tournamentId, TicketRequest ticketRequest){
+        Long seatId = ticketRequest.getSeatId();
+        //one lock per seat: get this seat's lock from the map, or create it the first time someone buys this seat.
+        // Buyers of the same seat get the same lock, buyers of other seats get different locks, so they don't wait.
+        ReentrantLock lock = seatLocks.computeIfAbsent(seatId, id-> new ReentrantLock());
+        System.out.println("Thread [" + Thread.currentThread().getName() + "] is waiting for the lock of seat " + seatId);
+
+        // Blocks here. If another thread holds this seat's lock, this thread waits until it is released.
+        lock.lock();
+        try {
+            System.out.println("Current thread [ " + Thread.currentThread().getName() + " ] holds the lock of the seat " + seatId);
+            // Runs processPurchase inside a database transaction that COMMITS before execute() returns.
+            // This matters: the lock is released only after the commit, so the next thread sees the seat as SOLD.
+            Ticket ticket = transactionTemplate.execute(status -> processPurchase(email, tournamentId, ticketRequest));
+            System.out.println("Seat " + seatId + " sold by thread [" + Thread.currentThread().getName() + "]");
+            return ticket;
+        }finally {
+            // finally always runs, even when processPurchase throws (for example SeatAlreadySoldException),
+            // so a failed purchase can never leave the seat locked forever.
+            lock.unlock();
+            System.out.println("Thread [" + Thread.currentThread().getName() + "] released the lock of the seat " + seatId);
+        }
+    }
+
 
     /**
      * Buys a ticket for a seat of a tournament. The price comes from the seat,
@@ -39,10 +71,13 @@ public class TicketService {
      * @throws InvalidTournamentException if the seat is not in this tournament, or the tournament is not upcoming or ongoing.
      * @throws SeatAlreadySoldException if the seat is already sold.
      */
-    @Transactional
-    public Ticket buyTicket(String email, Long tournamentId, TicketRequest ticketRequest) {
+    private Ticket processPurchase(String email, Long tournamentId, TicketRequest ticketRequest) {
         Long seatId = ticketRequest.getSeatId();
-        Seat seat = seatRepository.findById(seatId).orElseThrow(
+        log.info("Ticket purchase started: seat={}, thread={}", seatId, Thread.currentThread().getName());
+
+        // Second lock: the database locks the seat row (SELECT ... FOR UPDATE) until this transaction ends.
+        // The ReentrantLock protects one running server, and this one protects the database
+        Seat seat = seatRepository.findByIdForUpdate(seatId).orElseThrow(
                 ()->new InformationNotFoundException("Seat with this id " + seatId + " not found.")
         );
 
@@ -62,7 +97,13 @@ public class TicketService {
            throw new InvalidTournamentException("Tickets can only be bought for upcoming or ongoing tournaments.");
        }
        if(seat.getSeatStatus() != SeatStatus.AVAILABLE){
+           log.warn("Ticket purchase conflict: seat={} already sold, thread={}", seatId, Thread.currentThread().getName());
            throw new SeatAlreadySoldException("Seat " + seat.getSeatNumber() + " is already sold.");
+       }
+       try {
+           Thread.sleep(200);
+       } catch (InterruptedException e){
+           Thread.currentThread().interrupt();
        }
 
        seat.setSeatStatus(SeatStatus.SOLD);
@@ -74,6 +115,8 @@ public class TicketService {
         ticket.setSeat(seat);
         ticket.setPrice(seat.getPrice());
         ticketRepository.save(ticket);
+        log.info("Ticket purchase succeeded: seat={}, ticket={}, thread={}",
+                seatId, ticket.getId(), Thread.currentThread().getName());
         return ticket;
     }
 
@@ -182,4 +225,6 @@ public class TicketService {
 
         return ticket;
     }
+
+    @
 }
