@@ -3,7 +3,6 @@ package com.ga.equestrian.service;
 import com.ga.equestrian.dto.request.TicketRequest;
 import com.ga.equestrian.exception.*;
 import com.ga.equestrian.model.entity.*;
-import com.ga.equestrian.model.enums.PaymentStatus;
 import com.ga.equestrian.model.enums.SeatStatus;
 import com.ga.equestrian.model.enums.TicketStatus;
 import com.ga.equestrian.model.enums.TournamentStatus;
@@ -33,6 +32,8 @@ public class TicketService {
     private final PaymentRepository paymentRepository;
     private final ConcurrentHashMap<Long, ReentrantLock> seatLocks = new ConcurrentHashMap<>();
     private final TransactionTemplate transactionTemplate;
+    private final ReentrantLock updateLock = new ReentrantLock();
+
 
     public Ticket buyTicket(String email, Long tournamentId, TicketRequest ticketRequest){
         Long seatId = ticketRequest.getSeatId();
@@ -226,5 +227,93 @@ public class TicketService {
         return ticket;
     }
 
-    @
+
+    /**
+     * Moves a ticket to a different seat of the same tournament.
+     * A single lock is held while the seat is changed, so only one seat change runs at a time,
+     * and it is released only after the transaction has committed.
+     *
+     * @param email the email of the signed-in user.
+     * @param id the id of the ticket.
+     * @param ticketRequest the request holding the id of the new seat.
+     * @return the updated ticket.
+     */
+    public Ticket updateTicket(String email, Long id, TicketRequest ticketRequest){
+        updateLock.lock();
+        try {
+            return transactionTemplate.execute(status -> updateTicketProcess(email, id, ticketRequest));
+        } finally {
+            updateLock.unlock();
+        }
+    }
+
+    /**
+     * Changes the seat of a ticket inside a database transaction.
+     * the ticket and both seats are locked in the database, the old seat become available.
+     * the new seat becomes sold, and the ticket takes the price of the new seat.
+     *
+     * @param email the email of the signed-in user.
+     * @param id the id of the ticket.
+     * @param ticketRequest the request holding the id of the new seat.
+     * @return the updated ticket.
+     * @throws InformationNotFoundException if the ticket or a seat does not exist.
+     * @throws AccessDeniedException if the ticket belongs to another user.
+     * @throws TicketAlreadyCancelledException if the ticket is already cancelled.
+     * @throws TicketCancellationNotAllowedException if the tournament is not upcoming.
+     * @throws InvalidTournamentException if the new seat belongs to another tournament.
+     * @throws SeatAlreadySoldException if the new seat is already sold, or is the ticket's current seat.
+     */
+    private Ticket updateTicketProcess(String email, Long id, TicketRequest ticketRequest) {
+        Long newSeatId = ticketRequest.getSeatId();
+
+        Ticket ticket = ticketRepository.findById(id).orElseThrow(
+                ()-> new InformationNotFoundException("Ticket with this id " + id + " not found")
+        );
+        if(!ticket.getUser().getEmail().equals(email)){
+            throw new AccessDeniedException("You can only update your own tickets. ");
+        }
+        if(ticket.getTicketStatus().equals(TicketStatus.CANCELLED)){
+            throw new TicketAlreadyCancelledException("A cancelled ticket cannot be changed. ");
+        }
+
+        Tournament tournament = ticket.getTournament();
+        if(!tournament.getTournamentStatus().equals(TournamentStatus.UPCOMING)) {
+            throw new InvalidTournamentException("Seats can only changed for upcoming tournaments.");
+        }
+
+        Long oldSeatId = ticket.getSeat().getId();
+        if(oldSeatId.equals(newSeatId)) {
+            throw new SeatAlreadySoldException("This is already your seat.");
+        }
+
+        log.info("Ticket seat change started: ticket={}, oldSeat={}, newSeat={}, thread={}",
+                id, oldSeatId, newSeatId, Thread.currentThread().getName());
+
+        Seat oldSeat = seatRepository.findByIdForUpdate(oldSeatId).orElseThrow(
+                ()-> new InformationNotFoundException("Seat with this id " + oldSeatId + " not found")
+        );
+        // Second lock: the database locks the seat row (SELECT ... FOR UPDATE) until this transaction ends.
+        // The ReentrantLock protects one running server, and this one protects the database
+        Seat newSeat = seatRepository.findByIdForUpdate(newSeatId).orElseThrow(
+                ()->new InformationNotFoundException("Seat with this id " + newSeatId + " not found.")
+        );
+
+        if(!newSeat.getTournament().getId().equals(tournament.getId())){
+            throw new InvalidTournamentException("Seat " + newSeat.getSeatNumber() + " does not belong to this tournament. ");
+        }
+        if(newSeat.getSeatStatus() != SeatStatus.AVAILABLE){
+            log.warn("Ticket purchase conflict: newSeat={} already sold, thread={}", newSeatId, Thread.currentThread().getName());
+            throw new SeatAlreadySoldException("Seat " + newSeat.getSeatNumber() + " is already sold.");
+        }
+
+        oldSeat.setSeatStatus(SeatStatus.AVAILABLE);
+        newSeat.setSeatStatus(SeatStatus.SOLD);
+        seatRepository.save(oldSeat);
+        seatRepository.save(newSeat);
+
+        ticket.setSeat(newSeat);
+        ticketRepository.save(ticket);
+
+        return ticket;
+    }
 }

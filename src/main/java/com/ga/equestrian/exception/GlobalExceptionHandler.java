@@ -217,8 +217,21 @@ public class GlobalExceptionHandler{
         return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "TICKET_CANCELLATION_NOT_ALLOWED", ex.getMessage(), request);
     }
 
+    /**
+     * Handles requests that break a tournament rule, such as buying or changing a ticket
+     * for a tournament that is not upcoming.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 422 response with error details.
+     */
+    @ExceptionHandler(InvalidTournamentException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTournament(InvalidTournamentException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "INVALID_TOURNAMENT", ex.getMessage(), request);
+    }
 
     /**
+     *
      * Builds an error response.
      *
      * @param status the HTTP status to return.

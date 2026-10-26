@@ -4,7 +4,6 @@ import com.ga.equestrian.dto.request.TicketRequest;
 import com.ga.equestrian.dto.response.TicketResponse;
 import com.ga.equestrian.mapper.TicketMapper;
 import com.ga.equestrian.model.entity.Ticket;
-import com.ga.equestrian.repository.UserRepository;
 import com.ga.equestrian.service.TicketService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -96,9 +95,16 @@ public class TicketController {
      * @return the cancelled ticket.
      */
     @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/{id}/cancel")
+    @PatchMapping("/{id}/cancel")
     public ResponseEntity<TicketResponse> cancelTicket(@PathVariable Long id) {
         Ticket ticket = ticketService.cancelTicket(id);
+        return ResponseEntity.status(HttpStatus.OK).body(ticketMapper.toResponse(ticket));
+    }
+
+    @PreAuthorize("isAuthenticated()")
+    @PatchMapping("/{id}/update/my")
+    public ResponseEntity<TicketResponse> updateTicket(Authentication authentication, @PathVariable Long id, @RequestBody TicketRequest ticketRequest){
+        Ticket ticket = ticketService.updateTicket(authentication.getName(), id, ticketRequest);
         return ResponseEntity.status(HttpStatus.OK).body(ticketMapper.toResponse(ticket));
     }
 }
