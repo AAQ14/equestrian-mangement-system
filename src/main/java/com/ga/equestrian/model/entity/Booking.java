@@ -46,6 +46,10 @@ public class Booking {
     @Column(nullable = false)
     private BookingStatus bookingStatus = BookingStatus.PENDING;
 
+    @JsonIgnore
+    @OneToOne(mappedBy = "booking", fetch = FetchType.LAZY)
+    private HorseAssignment horseAssignment;
+
     @Column(updatable = false)
     @CreationTimestamp
     private LocalDateTime createdAt;
