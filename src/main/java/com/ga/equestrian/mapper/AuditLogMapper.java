@@ -16,7 +16,8 @@ public class AuditLogMapper {
      * @return the audit log response.
      */
     public AuditResponse toResponse(AuditLog auditLog){
-        return new AuditResponse(auditLog.getId(), auditLog.getUser().getId(),
+        Long userId = auditLog.getUser() != null ? auditLog.getUser().getId() : null;
+        return new AuditResponse(auditLog.getId(), userId,
                 auditLog.getAuditAction(), auditLog.getEntityType(), auditLog.getEntityId(),
                 auditLog.getDescription(), auditLog.getCreatedAt());
     }

@@ -8,6 +8,9 @@ import com.ga.equestrian.repository.AuditLogRepository;
 import com.ga.equestrian.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 /**
  * Records and reads the audit log.
@@ -35,6 +38,16 @@ public class AuditLogService {
         auditLog.setEntityId(entityId);
         auditLog.setDescription(description);
         auditLogRepository.save(auditLog);
+    }
+
+    /**
+     * Gets all the audit logs, newest first.
+     *
+     * @return a list for the audit logs.
+     */
+    @Transactional(readOnly = true)
+    public List<AuditLog> getAllAuditLogs(){
+        return auditLogRepository.findAllByOrderByCreatedAtDesc();
     }
 
 }

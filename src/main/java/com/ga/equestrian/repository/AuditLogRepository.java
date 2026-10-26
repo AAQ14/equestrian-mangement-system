@@ -14,5 +14,5 @@ public interface AuditLogRepository extends JpaRepository<AuditLog, Long> {
      * @return the audit logs.
      */
 
-    List<AuditLog> findAllByOrderBtCreatedAtDesc();
+    List<AuditLog> findAllByOrderByCreatedAtDesc();
 }
