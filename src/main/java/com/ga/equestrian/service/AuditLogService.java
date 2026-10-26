@@ -1,0 +1,41 @@
+package com.ga.equestrian.service;
+
+import com.ga.equestrian.exception.InformationNotFoundException;
+import com.ga.equestrian.model.entity.AuditLog;
+import com.ga.equestrian.model.entity.User;
+import com.ga.equestrian.model.enums.AuditAction;
+import com.ga.equestrian.repository.AuditLogRepository;
+import com.ga.equestrian.repository.UserRepository;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+
+/**
+ * Records and reads the audit log.
+ */
+@Service
+@RequiredArgsConstructor
+public class AuditLogService {
+    private final AuditLogRepository auditLogRepository;
+    private final UserRepository userRepository;
+
+    /**
+     * Adds a row to the audit log.
+     *
+     * @param email the email of the user who did the action, or null if there is none.
+     * @param auditAction the kind of action.
+     * @param entityType the kind of record it was done on, e.g. "Seat".
+     * @param entityId the id of that record.
+     * @param description a short sentence, with ids only and no sensitive data.
+     */
+    public void record(String email, AuditAction auditAction, String entityType, Long entityId, String description){
+        AuditLog auditLog = new AuditLog();
+        auditLog.setUser(email == null ? null : userRepository.findByEmail(email).orElse(null));
+        auditLog.setAuditAction(auditAction);
+        auditLog.setEntityType(entityType);
+        auditLog.setEntityId(entityId);
+        auditLog.setDescription(description);
+        auditLogRepository.save(auditLog);
+    }
+
+
+}
