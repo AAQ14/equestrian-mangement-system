@@ -15,7 +15,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Getter
 @Setter
-public class AuditResponse {
+public class AuditLogResponse {
     private Long id;
     private Long userId;
     private AuditAction auditAction;

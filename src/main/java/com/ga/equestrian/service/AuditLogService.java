@@ -1,12 +1,11 @@
 package com.ga.equestrian.service;
 
-import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.model.entity.AuditLog;
-import com.ga.equestrian.model.entity.User;
 import com.ga.equestrian.model.enums.AuditAction;
 import com.ga.equestrian.repository.AuditLogRepository;
 import com.ga.equestrian.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +15,7 @@ import java.util.List;
  * Records and reads the audit log.
  */
 @Service
+@Slf4j
 @RequiredArgsConstructor
 public class AuditLogService {
     private final AuditLogRepository auditLogRepository;
@@ -37,7 +37,11 @@ public class AuditLogService {
         auditLog.setEntityType(entityType);
         auditLog.setEntityId(entityId);
         auditLog.setDescription(description);
-        auditLogRepository.save(auditLog);
+        try {
+            auditLogRepository.save(auditLog);
+        }catch (Exception e){
+            log.warn("Could not save audit log: action={}, entity={} {}", auditAction, entityType, entityId);
+        }
     }
 
     /**
