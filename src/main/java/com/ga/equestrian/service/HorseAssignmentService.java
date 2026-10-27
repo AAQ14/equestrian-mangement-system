@@ -17,6 +17,7 @@ import com.ga.equestrian.repository.HorseRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
@@ -36,15 +37,19 @@ public class HorseAssignmentService {
     private final ConcurrentHashMap<Long, ReentrantLock> assignsLock = new ConcurrentHashMap<>();
     private final TransactionTemplate transactionTemplate;
 
-//    public Horse assignHorse(String email, HorseAssignmentRequest horseAssignmentRequest){
-//        ReentrantLock lock = assignsLock.computeIfAbsent(horseId, id ->new ReentrantLock());
-//
-//        lock.lock();
-//        try{
-//            return transactionTemplate.execute(status -> p)
-//        }
-//        if()
-//    }
+    public HorseAssignment assignHorse(String email, HorseAssignmentRequest horseAssignmentRequest){
+        Long horseId = horseAssignmentRequest.getHorseId();
+        ReentrantLock lock = assignsLock.computeIfAbsent(horseId, id ->new ReentrantLock());
+
+        lock.lock();
+        try{
+            return transactionTemplate.execute(status -> assignHorseProcess(email, horseAssignmentRequest));
+        } catch (TransactionException e) {
+            throw new RuntimeException(e);
+        }finally {
+            lock.unlock();
+        }
+    }
 
     private HorseAssignment assignHorseProcess(String email, HorseAssignmentRequest horseAssignmentRequest){
         Long bookingId = horseAssignmentRequest.getBookingId();
