@@ -1,11 +1,13 @@
 package com.ga.equestrian.service;
 import com.ga.equestrian.dto.request.HorseAssignmentRequest;
+import com.ga.equestrian.exception.InformationExistException;
 import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.exception.InvalidBookingException;
 import com.ga.equestrian.model.entity.Booking;
 import com.ga.equestrian.model.entity.Horse;
 import com.ga.equestrian.model.entity.HorseAssignment;
 import com.ga.equestrian.model.entity.RidingSession;
+import com.ga.equestrian.model.enums.AssignmentStatus;
 import com.ga.equestrian.model.enums.BookingStatus;
 import com.ga.equestrian.model.enums.HorseStatus;
 import com.ga.equestrian.model.enums.SessionStatus;
@@ -17,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -43,7 +46,7 @@ public class HorseAssignmentService {
 //        if()
 //    }
 
-    private Horse assignHorseProcess(String email, HorseAssignmentRequest horseAssignmentRequest){
+    private HorseAssignment assignHorseProcess(String email, HorseAssignmentRequest horseAssignmentRequest){
         Long bookingId = horseAssignmentRequest.getBookingId();
         Long horseId = horseAssignmentRequest.getHorseId();
         log.info("Horse assignment started: booking={}, horse={}, thread={}",
@@ -71,5 +74,22 @@ public class HorseAssignmentService {
             throw new InvalidBookingException("This horse is not available. ");
         }
 
+        List<HorseAssignment> sameDay = horseAssignmentRepository.findAllByHorseIdAndAssignmentStatusAndRidingSessionDate(horseId, AssignmentStatus.ASSIGNED, booking.getRidingSession().getDate());
+
+        boolean unavailable = sameDay.stream().anyMatch(a-> a.getRidingSession().getStartTime().isBefore(ridingSession.getEndTime())
+        && a.getRidingSession().getEndTime().isAfter(ridingSession.getStartTime()));
+
+        if(unavailable) {
+            log.warn("Horse assignment conflict: horse{} is busy, thread{}", horseId, Thread.currentThread().getName());
+            throw new InformationExistException("This horse is already assigned to another session at this time. ");
+        }
+
+        HorseAssignment assignment = new HorseAssignment();
+        assignment.setBooking(booking);
+        assignment.setHorse(horse);
+        assignment.setRidingSession(ridingSession);
+        log.info("Horse assignment succeeded: booking{}, horse{}, session{}, thread{}", bookingId, horseId, ridingSession, Thread.currentThread().getName());
+        horseAssignmentRepository.save(assignment);
+        return assignment;
     }
 }
