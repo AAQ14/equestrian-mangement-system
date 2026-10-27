@@ -145,7 +145,7 @@ public class HorseAssignmentService {
      * @param horseAssignmentUpdateRequest the request holding the id of the new horse.
      * @return the updated assignment.
      */
-    public HorseAssignment updateHorse(String email, Long bookingId, Long HorseAssignmentId,HorseAssignmentUpdateRequest horseAssignmentUpdateRequest){
+    public HorseAssignment updateHorseAssignment(String email, Long bookingId, HorseAssignmentUpdateRequest horseAssignmentUpdateRequest){
         Long horseId = horseAssignmentUpdateRequest.getHorseId();
         ReentrantLock lock = assignsLock.computeIfAbsent(horseId, id ->new ReentrantLock());
 
