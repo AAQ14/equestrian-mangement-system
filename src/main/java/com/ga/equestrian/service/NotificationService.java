@@ -9,6 +9,7 @@ import com.ga.equestrian.model.enums.NotificationType;
 import com.ga.equestrian.repository.NotificationRepository;
 import com.ga.equestrian.repository.UserRepository;
 import com.ga.equestrian.sse.SseEmitterRegistry;
+import jakarta.annotation.PreDestroy;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Service
 @Slf4j
@@ -25,6 +29,9 @@ public class NotificationService {
     private final UserRepository userRepository;
     private final NotificationMapper notificationMapper;
     private final SseEmitterRegistry sseEmitterRegistry;
+    private final AtomicInteger threadCounter = new AtomicInteger(1);
+    private final ExecutorService notificationExecuter = Executors.newFixedThreadPool(4,
+            runnable -> new Thread(runnable, "notify-" + threadCounter.getAndIncrement()));
 
     /**
      * Saves a notification for a user and pushes it to the user's open connections.
@@ -79,5 +86,34 @@ public class NotificationService {
                 .toList();
     }
 
+    /**
+     * Creates and sends a notification on the thread pool.
+     *
+     * @param userId the id of the user who receives the notification.
+     * @param message the text of the notification.
+     * @param notificationType the kind of the notification.
+     */
+    public void sendInBackground(Long userId, String message, NotificationType notificationType){
+        notificationExecuter.submit(()->{
+            try{
+                log.info("Notification task started: user={}, thread={}", userId, Thread.currentThread().getName());
+                Thread.sleep(500);
+                User user = userRepository.findById(userId).orElseThrow(
+                        ()-> new InformationNotFoundException("User with this id " + userId + " not found.")
+                );
+                createAndSend(user, message, notificationType);
+            }catch (Exception e){
+                log.error("Notification task failed: user={}", userId, e);
+            }
+        });
+    }
+
+    /**
+     * Stops the thread pool when the application shuts down.
+     */
+    @PreDestroy
+    public void shutdown() {
+        notificationExecuter.shutdown();
+    }
 
 }
