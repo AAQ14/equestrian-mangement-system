@@ -97,6 +97,7 @@ public class NotificationService {
         notificationExecuter.submit(()->{
             try{
                 log.info("Notification task started: user={}, thread={}", userId, Thread.currentThread().getName());
+                Thread.sleep(500);
                 User user = userRepository.findById(userId).orElseThrow(
                         ()-> new InformationNotFoundException("User with this id " + userId + " not found.")
                 );
