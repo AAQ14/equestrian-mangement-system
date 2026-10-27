@@ -2,8 +2,13 @@ package com.ga.equestrian.repository;
 
 import com.ga.equestrian.model.entity.HorseAssignment;
 import com.ga.equestrian.model.enums.AssignmentStatus;
+import jakarta.persistence.LockModeType;
+import org.hibernate.internal.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Query;
 
+import javax.swing.text.html.Option;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -29,4 +34,16 @@ public interface HorseAssignmentRepository extends JpaRepository<HorseAssignment
      * @return the matching assignments, empty if there are none.
      */
     List<HorseAssignment> findAllByHorseIdAndAssignmentStatusAndRidingSessionDate(Long horseId, AssignmentStatus assignmentStatus, LocalDate date);
+
+
+    List<HorseAssignment> findAllByUserId(Long userId);
+
+    /**
+     * Finds the assignment of a booking.
+     *
+     * @param bookingId the id of the booking.
+     * @return the assignment, if the booking has a horse.
+     */
+
+    Optional<HorseAssignment> findByBookingId(Long bookingId);
 }
