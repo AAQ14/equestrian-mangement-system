@@ -14,9 +14,6 @@ import lombok.Setter;
 @Getter
 @Setter
 public class HorseAssignmentRequest {
-    @NotNull(message = "booking id is required")
-    private Long bookingId;
-
     @NotNull(message = "horse id is required")
     private Long horseId;
 }

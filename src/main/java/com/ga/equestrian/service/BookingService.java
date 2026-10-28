@@ -59,6 +59,9 @@ public class BookingService {
             RidingSession session = ridingSessionRepository.findById(request.getRidingSessionId()).orElseThrow(
                     () -> new InformationNotFoundException("Riding session with id " + request.getRidingSessionId() + " not found.")
             );
+            if(signedInUser.getRole() == Role.INSTRUCTOR && request.getUserId() !=null && !session.getInstructor().getUser().getId().equals(signedInUser.getId())){
+                throw new AccessDeniedException("Instructors can only book clients into their own sessions. ");
+            }
             if (session.getSessionStatus() != SessionStatus.AVAILABLE) {
                 throw new InvalidBookingException("This session is not available for booking.");
             }
@@ -92,7 +95,7 @@ public class BookingService {
         log.info("User {} created booking {} for session {} (booked user {})",
                 signedInUser.getId(), savedBooking.getId(), session.getId(), bookedUser.getId());
 
-            notificationService.createAndSend(bookedUser,  "Your booking for " + session.getDate() + " was created and is pending confirmation.", NotificationType.BOOKING_CREATED);
+//            notificationService.createAndSend(bookedUser,  "Your booking for " + session.getDate() + " was created and is pending confirmation.", NotificationType.BOOKING_CREATED);
             return bookingMapper.toResponse(savedBooking);
 
     }
@@ -159,7 +162,8 @@ public class BookingService {
 
     /**
      * Changes the status of a booking, following the allowed transitions.
-     * Clients can only cancel their own bookings; instructors and admins can apply any allowed change.
+     * Clients can only cancel their own bookings; instructors
+     * can apply any allowed change.
      *
      * @param id the booking id.
      * @param email the email of the signed-in user, taken from the JWT.
@@ -213,7 +217,9 @@ public class BookingService {
     private Booking findAccessibleBooking(Long id, User signedInUser) {
         Booking booking = bookingRepository.findById(id).orElseThrow(
                 () -> new InformationNotFoundException("Booking with id " + id + " not found."));
-        if (signedInUser.getRole() == Role.CLIENT && !booking.getUser().getId().equals(signedInUser.getId())) {
+        boolean isBookingOwner = booking.getUser().getId().equals(signedInUser.getId());
+        boolean isSessionInstructor = booking.getRidingSession().getInstructor().getUser().getId().equals(signedInUser.getId());
+        if (!isBookingOwner && !isSessionInstructor) {
             throw new AccessDeniedException("You can only access your own bookings.");
         }
         return booking;
