@@ -242,6 +242,11 @@ public class GlobalExceptionHandler{
         return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "INVALID_SESSION", ex.getMessage(), request);
     }
 
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ErrorResponse> handleTooManyRequestsException(TooManyRequestsException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_REQUESTS", ex.getMessage(), request);
+    }
+
     /**
      *
      * Builds an error response.
