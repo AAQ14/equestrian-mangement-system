@@ -11,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -64,8 +65,8 @@ public class TournamentController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<TournamentResponse> cancelTournament(@PathVariable Long id){
-        Tournament tournament = tournamentService.cancelTournament(id);
+    public ResponseEntity<TournamentResponse> cancelTournament(Authentication authentication,  @PathVariable Long id){
+        Tournament tournament = tournamentService.cancelTournament(authentication.getName(), id);
         return ResponseEntity.status(HttpStatus.OK).body(tournamentMapper.toResponse(tournament));
     }
 
