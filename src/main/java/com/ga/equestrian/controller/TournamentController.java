@@ -68,4 +68,11 @@ public class TournamentController {
         Tournament tournament = tournamentService.cancelTournament(id);
         return ResponseEntity.status(HttpStatus.OK).body(tournamentMapper.toResponse(tournament));
     }
+
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/{id}")
+    public ResponseEntity<TournamentResponse> getTournamentById(@PathVariable Long id){
+        Tournament tournament = tournamentService.getTournamentById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(tournamentMapper.toResponse(tournament));
+    }
 }

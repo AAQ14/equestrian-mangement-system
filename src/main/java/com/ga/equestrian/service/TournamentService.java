@@ -178,4 +178,10 @@ public class TournamentService {
         tournamentRepository.save(tournament);
         return tournament;
     }
+
+    public Tournament getTournamentById(Long id){
+        return tournamentRepository.findById(id).orElseThrow(
+                ()->new InformationNotFoundException("tournament with this id " + id + " is not found.")
+        );
+    }
 }
