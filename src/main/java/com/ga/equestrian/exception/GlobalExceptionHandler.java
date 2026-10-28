@@ -231,6 +231,18 @@ public class GlobalExceptionHandler{
     }
 
     /**
+     * Handles actions on riding sessions that break a business rule.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 422 response with error details.
+     */
+    @ExceptionHandler(InvalidSessionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidSessionException(InvalidSessionException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "INVALID_SESSION", ex.getMessage(), request);
+    }
+
+    /**
      *
      * Builds an error response.
      *
