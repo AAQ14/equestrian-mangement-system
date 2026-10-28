@@ -139,6 +139,7 @@ public class TournamentService {
     /**
      * Cancels an upcoming tournament and its active tickets.
      * Completed payments are refunded and pending payments are marked as failed.
+     * The user who cancelled the tournament will be notified.
      * Every ticket holder is then notified on the thread pool.
      *
      * @param id the id of the tournament.
@@ -147,7 +148,11 @@ public class TournamentService {
      * @throws InvalidTournamentException if the tournament is not upcoming.
      */
     @Transactional
-    public Tournament cancelTournament(Long id){
+    public Tournament cancelTournament(String email, Long id){
+        User user = userRepository.findByEmail(email).orElseThrow(
+                ()-> new InformationNotFoundException("User with this email " + email + " not found.")
+        );
+
         Tournament tournament = tournamentRepository.findById(id).orElseThrow(
                 () ->  new InformationNotFoundException("Tournament with this id " + id + " not found")
         );
@@ -181,6 +186,8 @@ public class TournamentService {
             Long userId = ticket.getUser().getId();
             notificationService.sendInBackground(userId,   "The tournament " + tournament.getName() + " of your ticket has been cancelled." ,NotificationType.TOURNAMENT_CANCELLED);
         }
+
+        notificationService.sendInBackground(user.getId(),"Tournament " + tournament.getName() + " was cancelled and " + tickets.size() + " ticket holders were notified." , NotificationType.TOURNAMENT_CANCELLED);
         return tournament;
     }
 
