@@ -63,6 +63,6 @@ public interface BookingRepository extends JpaRepository<Booking, Long> {
      * @param statuses the booking statuses to include.
      * @return the matching bookings, or an empty list if there are none.
      */
-    List<Booking> findByRidingSessionIdAndBookingStatusIn(Long sessionId, List<BookingStatus> statuses);
+    List<Booking> findAllByRidingSessionIdAndBookingStatusIn(Long sessionId, List<BookingStatus> statuses);
 
 }

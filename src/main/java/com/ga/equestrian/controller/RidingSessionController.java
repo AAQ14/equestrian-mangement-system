@@ -12,6 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -101,10 +102,10 @@ public class RidingSessionController {
      * @param id the session id.
      * @return the deleted session.
      */
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
-    public ResponseEntity<RidingSessionResponse> deleteSession(@PathVariable Long id) {
-        RidingSessionResponse response = ridingSessionService.deleteSession(id);
+    @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<RidingSessionResponse> deleteSession(Authentication authentication,  @PathVariable Long id) {
+        RidingSessionResponse response = ridingSessionService.cancelSession(authentication.getName(), id);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
