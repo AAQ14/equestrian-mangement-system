@@ -17,5 +17,21 @@ public enum NotificationType {
     /** A session was cancelled, sent to clients with an active booking. */
     SESSION_CANCELLED,
     /** A general message. */
-    SYSTEM
+    SYSTEM,
+    /** A client bought a ticket, sent to the buyer. */
+    TICKET_PURCHASED,
+    /** A ticket was cancelled by its owner, sent to the owner. */
+    TICKET_CANCELLED,
+    /** A ticket was moved to another seat, sent to the owner. */
+    TICKET_SEAT_CHANGED,
+    /** A tournament was cancelled, sent to every ticket holder. */
+    TOURNAMENT_CANCELLED,
+    /** A tournament's date, time or venue changed, sent to every ticket holder. */
+    TOURNAMENT_UPDATED,
+    /** A horse was assigned to a booking, sent to the booked client. */
+    HORSE_ASSIGNED,
+    /** A booking's horse was changed, sent to the booked client. */
+    HORSE_ASSIGNMENT_UPDATED,
+    /** A booking's horse was removed, sent to the booked client. */
+    HORSE_ASSIGNMENT_CANCELLED
 }

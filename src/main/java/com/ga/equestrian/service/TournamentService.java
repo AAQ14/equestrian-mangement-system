@@ -5,17 +5,12 @@ import com.ga.equestrian.dto.request.UpdateTournamentRequest;
 import com.ga.equestrian.exception.InformationExistException;
 import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.exception.InvalidTournamentException;
-import com.ga.equestrian.model.entity.Payment;
-import com.ga.equestrian.model.entity.Seat;
-import com.ga.equestrian.model.entity.Ticket;
-import com.ga.equestrian.model.entity.Tournament;
-import com.ga.equestrian.model.enums.PaymentStatus;
-import com.ga.equestrian.model.enums.SeatStatus;
-import com.ga.equestrian.model.enums.TicketStatus;
-import com.ga.equestrian.model.enums.TournamentStatus;
+import com.ga.equestrian.model.entity.*;
+import com.ga.equestrian.model.enums.*;
 import com.ga.equestrian.repository.SeatRepository;
 import com.ga.equestrian.repository.TicketRepository;
 import com.ga.equestrian.repository.TournamentRepository;
+import com.ga.equestrian.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
@@ -30,6 +25,8 @@ public class TournamentService {
     private final TournamentRepository tournamentRepository;
     private final SeatRepository seatRepository;
     private final TicketRepository ticketRepository;
+    private final UserRepository userRepository;
+    private final NotificationService notificationService;
 
     /**
      *
@@ -142,10 +139,14 @@ public class TournamentService {
     /**
      * Cancels an upcoming tournament and its active tickets.
      * Completed payments are refunded and pending payments are marked as failed.
+     * Every ticket holder is then notified on the thread pool.
      *
      * @param id the id of the tournament.
      * @return the cancelled tournament.
+     * @throws InformationNotFoundException if the tournament does not exist.
+     * @throws InvalidTournamentException if the tournament is not upcoming.
      */
+    @Transactional
     public Tournament cancelTournament(Long id){
         Tournament tournament = tournamentRepository.findById(id).orElseThrow(
                 () ->  new InformationNotFoundException("Tournament with this id " + id + " not found")
@@ -155,8 +156,6 @@ public class TournamentService {
         {
             throw new InvalidTournamentException("Only upcoming tournaments can cancelled.");
         }
-
-        tournament.setTournamentStatus(TournamentStatus.CANCELLED);
 
         List<Ticket> tickets = ticketRepository.findAllByTournamentIdAndTicketStatusIn(id, List.of(TicketStatus.PENDING, TicketStatus.CONFIRMED));
 
@@ -174,14 +173,26 @@ public class TournamentService {
 
         }
 
+        tournament.setTournamentStatus(TournamentStatus.CANCELLED);
         ticketRepository.saveAll(tickets);
         tournamentRepository.save(tournament);
+
+        for (Ticket ticket: tickets){
+            Long userId = ticket.getUser().getId();
+            notificationService.sendInBackground(userId,   "The tournament " + tournament.getName() + " of your ticket has been cancelled." ,NotificationType.TOURNAMENT_CANCELLED);
+        }
         return tournament;
     }
 
+    /**
+     * Gets a tournament by id.
+     * @param id the id of the tournament.
+     * @return the tournament.
+     * @throws InformationNotFoundException if the tournament does not exist.
+     */
     public Tournament getTournamentById(Long id){
         return tournamentRepository.findById(id).orElseThrow(
-                ()->new InformationNotFoundException("tournament with this id " + id + " is not found.")
+                ()->new InformationNotFoundException("Tournament with this id " + id + " is not found.")
         );
     }
 }
