@@ -40,6 +40,9 @@ public class AuthService {
     private final int MAX_LOG_ATTEMPTS = 5;
     private final ConcurrentHashMap<String , AtomicInteger> loginAttempts = new ConcurrentHashMap<>();
 
+    /**
+     * Clears the login attempts in every minute.
+     */
     @Scheduled(fixedRate = 6000)
     public void clearLoggingAttempts(){
         loginAttempts.clear();
@@ -104,6 +107,7 @@ public class AuthService {
      * @return a JWT login token containing the user's email and role.
      * @throws InformationNotFoundException if the email doesn't exit or the password is wrong.
      * @throws InvalidCodeException if the user's email is not verified.
+     * @throws TooManyRequestsException if the email made too many login attempts in the last minute.
      */
     public LoginResponse login(String email, String password) {
         int attempts = loginAttempts.computeIfAbsent(email, key->new AtomicInteger()).getAndIncrement();

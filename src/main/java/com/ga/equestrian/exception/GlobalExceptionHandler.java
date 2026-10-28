@@ -242,6 +242,13 @@ public class GlobalExceptionHandler{
         return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "INVALID_SESSION", ex.getMessage(), request);
     }
 
+    /**
+     * Handles requests that exceed the rate limit, such as too many login attempts in a minute.
+     *
+     * @param ex the exception thrown
+     * @param request the request that caused the error.
+     * @return a 429 response with error details.
+     */
     @ExceptionHandler(TooManyRequestsException.class)
     public ResponseEntity<ErrorResponse> handleTooManyRequestsException(TooManyRequestsException ex, HttpServletRequest request){
         return buildResponse(HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_REQUESTS", ex.getMessage(), request);
