@@ -31,9 +31,6 @@ public interface HorseAssignmentRepository extends JpaRepository<HorseAssignment
      */
     List<HorseAssignment> findAllByHorseIdAndAssignmentStatusAndRidingSessionDate(Long horseId, AssignmentStatus assignmentStatus, LocalDate date);
 
-
-    List<HorseAssignment> findAllByUserId(Long userId);
-
     /**
      * Finds the assignment of a booking.
      *

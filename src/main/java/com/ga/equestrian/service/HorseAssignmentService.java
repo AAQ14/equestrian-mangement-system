@@ -17,7 +17,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.TransactionException;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.List;
@@ -55,8 +55,6 @@ public class HorseAssignmentService {
         lock.lock();
         try{
             return transactionTemplate.execute(status -> assignHorseProcess(email, bookingId, horseAssignmentRequest));
-        } catch (TransactionException e) {
-            throw new RuntimeException(e);
         }finally {
             lock.unlock();
         }
@@ -85,7 +83,15 @@ public class HorseAssignmentService {
                 bookingId, horseId, Thread.currentThread().getName());
 
         if(booking.getBookingStatus().equals(BookingStatus.CANCELLED)) {
-            throw new InvalidBookingException("A horse cannot to be assigned to a cancelled booking.");
+            throw new InvalidBookingException("A horse cannot be assigned to a cancelled booking.");
+        }
+
+        if(booking.getBookingStatus().equals(BookingStatus.COMPLETED)) {
+            throw new InvalidBookingException("A horse cannot be assigned to a completed booking.");
+        }
+
+        if(horseAssignmentRepository.existsByBookingId(bookingId)){
+            throw new InformationExistException("This booking already has a horse.");
         }
 
         RidingSession ridingSession = booking.getRidingSession();
@@ -93,12 +99,19 @@ public class HorseAssignmentService {
             throw new InvalidBookingException("A horse cannot be assigned to cancelled or completed session.");
         }
 
-        Horse horse = horseRepository.findById(horseId).orElseThrow(
+        boolean isBookingOwner = booking.getUser().getEmail().equals(email);
+        boolean isInstructor = ridingSession.getInstructor().getUser().getEmail().equals(email);
+
+        if (!isBookingOwner && !isInstructor) {
+            throw new AccessDeniedException("You can only cancel the horse of your own booking or your own session.");
+        }
+
+        Horse horse = horseRepository.findByIdForUpdate(horseId).orElseThrow(
                 ()-> new InformationNotFoundException("Horse with this id " + horseId + " not found")
         );
 
         if(!horse.getHorseStatus().equals(HorseStatus.AVAILABLE)){
-            throw new InvalidBookingException("This horse is not available. ");
+            throw new InvalidBookingException("This horse is not available.");
         }
 
         List<HorseAssignment> sameDay = horseAssignmentRepository.findAllByHorseIdAndAssignmentStatusAndRidingSessionDate(horseId, AssignmentStatus.ASSIGNED, booking.getRidingSession().getDate());
@@ -108,14 +121,14 @@ public class HorseAssignmentService {
 
         if(unavailable) {
             log.warn("Horse assignment conflict: horse={} is busy, thread={}", horseId, Thread.currentThread().getName());
-            throw new InformationExistException("This horse is already assigned to another session at this time. ");
+            throw new InformationExistException("This horse is already assigned to another session at this time.");
         }
 
         HorseAssignment assignment = new HorseAssignment();
         assignment.setBooking(booking);
         assignment.setHorse(horse);
         assignment.setRidingSession(ridingSession);
-        log.info("Horse assignment succeeded: booking={}, horse={}, session={}, thread={}", bookingId, horseId, ridingSession, Thread.currentThread().getName());
+        log.info("Horse assignment succeeded: booking={}, horse={}, session={}, thread={}", bookingId, horseId, ridingSession.getId(), Thread.currentThread().getName());
         horseAssignmentRepository.save(assignment);
         return assignment;
     }
@@ -127,6 +140,7 @@ public class HorseAssignmentService {
      * @return the user's assignments, empty if there are none.
      * @throws InformationNotFoundException if the user does not exist.
      */
+    @Transactional(readOnly = true)
     public List<HorseAssignment> getHorseAssignments(String email){
         User user = userRepository.findByEmail(email).orElseThrow(
                 ()->new InformationNotFoundException("User with this email " + email + " not found")
@@ -165,7 +179,7 @@ public class HorseAssignmentService {
      * @param horseAssignmentUpdateRequest the request holding the id of the new horse.
      * @return the updated assignment.
      * @throws InformationNotFoundException if the booking has no assignment, or the horse does not exist.
-     * @throws AccessDeniedException if the booking belongs to another user.
+     * @throws AccessDeniedException  if the user is neither the booking owner nor the session's instructor.
      * @throws InvalidBookingException if the booking or session is not active, or the horse is not available.
      * @throws InformationExistException if it is already the booking's horse, or the new horse is busy at that time.
      */
@@ -178,16 +192,25 @@ public class HorseAssignmentService {
                 () -> new InformationNotFoundException("Booking " + bookingId + " has no horse assigned.")
         );
 
+
         Booking booking = horseAssignment.getBooking();
+
+        RidingSession ridingSession = booking.getRidingSession();
+
+        boolean isBookingOwner = horseAssignment.getBooking().getUser().getEmail().equals(email);
+        boolean isInstructor = ridingSession.getInstructor().getUser().getEmail().equals(email);
+
+        if (!isBookingOwner && !isInstructor) {
+            throw new AccessDeniedException("You can only update the horse of your own booking or your own session.");
+        }
+
+        if(ridingSession.getSessionStatus().equals(SessionStatus.COMPLETED) || ridingSession.getSessionStatus().equals(SessionStatus.CANCELLED)){
+            throw new InvalidBookingException("A horse cannot be assigned to cancelled or completed session.");
+        }
 
         BookingStatus bookingStatus = booking.getBookingStatus();
         if (bookingStatus == BookingStatus.CANCELLED || bookingStatus == BookingStatus.COMPLETED) {
             throw new InvalidBookingException("A horse cannot be changed on a cancelled or completed booking.");
-        }
-
-        RidingSession ridingSession = booking.getRidingSession();
-        if(ridingSession.getSessionStatus().equals(SessionStatus.COMPLETED) || ridingSession.getSessionStatus().equals(SessionStatus.CANCELLED)){
-            throw new InvalidBookingException("A horse cannot be assigned to cancelled or completed session.");
         }
 
         if (horseAssignment.getHorse().getId().equals(horseId)) {
@@ -209,18 +232,82 @@ public class HorseAssignmentService {
                 && a.getRidingSession().getEndTime().isAfter(ridingSession.getStartTime()));
 
         if(unavailable) {
-            log.warn("Horse assignment conflict: horse{} is busy, thread{}", horseId, Thread.currentThread().getName());
-            throw new InformationExistException("This horse is already assigned to another session at this time. ");
+            log.warn("Horse assignment conflict: horse={} is busy, thread={}", horseId, Thread.currentThread().getName());
+            throw new InformationExistException("This horse is already assigned to another session at this time.");
         }
 
-        if(!horseAssignment.getBooking().getUser().getEmail().equals(email)){
-           throw new AccessDeniedException("You can only update your own horse assignment");
-        }
 
         horseAssignment.setHorse(horse);
         HorseAssignment saved = horseAssignmentRepository.save(horseAssignment);
         log.info("Horse change succeeded: booking={}, newHorse={}, thread={}",
                 bookingId, horseId, Thread.currentThread().getName());
         return saved;
+    }
+
+    /**
+     * Gets the horse assignment of one booking.
+     *
+     * @param email the email of the signed-in user.
+     * @param bookingId the id of the booking.
+     * @return the assignment of the booking.
+     * @throws InformationNotFoundException if the booking has no horse assigned.
+     * @throws AccessDeniedException if the user is neither the booking's owner nor the session's instructor.
+     */
+    @Transactional(readOnly = true)
+    public HorseAssignment getHorseAssignmentByBooking(String email, Long bookingId){
+        HorseAssignment horseAssignment = horseAssignmentRepository.findByBookingId(bookingId).orElseThrow(
+                ()->new InformationNotFoundException("Booking " + bookingId + " has no horse assigned.")
+        );
+
+        boolean isBookingOwner = horseAssignment.getBooking().getUser().getEmail().equals(email);
+        boolean isInstructor = horseAssignment.getRidingSession().getInstructor().getUser().getEmail().equals(email);
+        if (!isBookingOwner && !isInstructor) {
+            throw new AccessDeniedException("You can only view the horse of your own booking or your own session.");
+        }
+        return horseAssignment;
+    }
+
+    /**
+     * Removes a horse from a booking, so the horse is free again at this time.
+     * The assignment row is deleted, so the booking can get a new horse later.
+     *
+     * @param email the email of the sign-in user.
+     * @param bookingId the id of the booking.
+     * @throws InformationNotFoundException if the booking has no horse assigned.
+     * @throws AccessDeniedException if the user is neither the booking owner nor the session's instructor.
+     * @throws InvalidBookingException if the session is already completed or cancelled.
+     */
+    @Transactional
+    public void cancelHorseAssignment(String email, Long bookingId) {
+        HorseAssignment horseAssignment = horseAssignmentRepository.findByBookingId(bookingId).orElseThrow(
+                ()->new InformationNotFoundException("Booking " + bookingId + " has no horse assigned.")
+        );
+
+//        Booking booking = bookingRepository.findById(bookingId).orElseThrow(
+//                ()-> new InformationNotFoundException("booking with this id is not found.")
+//        );
+
+        RidingSession session = horseAssignment.getBooking().getRidingSession();
+        boolean isBookingOwner = horseAssignment.getBooking().getUser().getEmail().equals(email);
+        boolean isInstructor = session.getInstructor().getUser().getEmail().equals(email);
+
+        if (!isBookingOwner && !isInstructor) {
+            throw new AccessDeniedException("You can only cancel the horse of your own booking or your own session.");
+        }
+
+        if(session.getSessionStatus() == SessionStatus.COMPLETED) {
+            throw new InvalidBookingException("The horse of a completed session cannot be cancelled.");
+        }
+
+        if(session.getSessionStatus() == SessionStatus.CANCELLED) {
+            throw new InvalidBookingException("The session is cancelled already.");
+        }
+
+        horseAssignmentRepository.delete(horseAssignment);
+//        booking.setHorseAssignment(null);
+//        bookingRepository.save(booking);
+
+        log.info("Horse assignment cancelled: booking={}, horse={}, thread={}",
+                bookingId, horseAssignment.getHorse().getId(), Thread.currentThread().getName());
     }
 }

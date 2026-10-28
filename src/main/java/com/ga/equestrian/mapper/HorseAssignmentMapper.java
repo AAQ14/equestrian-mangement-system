@@ -2,10 +2,12 @@ package com.ga.equestrian.mapper;
 
 import com.ga.equestrian.dto.response.HorseAssignmentResponse;
 import com.ga.equestrian.model.entity.HorseAssignment;
+import org.springframework.stereotype.Component;
 
 /**
  * Converts a horse assignment entity into a response.
  */
+@Component
 public class HorseAssignmentMapper {
     /**
      * Converts a horse assignment entity into its DTO response.

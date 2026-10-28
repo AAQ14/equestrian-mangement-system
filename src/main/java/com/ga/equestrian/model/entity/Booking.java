@@ -44,7 +44,7 @@ public class Booking {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private BookingStatus bookingStatus = BookingStatus.PENDING;
+    private BookingStatus bookingStatus = BookingStatus.CONFIRMED;
 
     @JsonIgnore
     @OneToOne(mappedBy = "booking", fetch = FetchType.LAZY)

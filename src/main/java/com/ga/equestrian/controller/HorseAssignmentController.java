@@ -78,4 +78,36 @@ public class HorseAssignmentController {
         return ResponseEntity.status(HttpStatus.OK).body(horseAssignmentMapper.toResponse(horseAssignment));
     }
 
+    /**
+     * Gets the horse assigned to a booking.
+     * Returns 200 on success, 403 if the user is not the booking's owner or the session's instructor,
+     * and 404 if the booking has no horse assigned.
+     *
+     * @param authentication the signed-in user.
+     * @param bookingId the id of the booking.
+     * @return the horse assignment of the booking.
+     */
+    @PreAuthorize("isAuthenticated()")
+    @GetMapping("/bookings/{bookingId}/horseAssignments")
+    public ResponseEntity<HorseAssignmentResponse> getHorseAssignment(Authentication authentication, @PathVariable Long bookingId){
+        HorseAssignment horseAssignment = horseAssignmentService.getHorseAssignmentByBooking(authentication.getName(), bookingId);
+        return ResponseEntity.status(HttpStatus.OK).body(horseAssignmentMapper.toResponse(horseAssignment));
+    }
+
+    /**
+     * Removes the horse from a booking.
+     * Returns 204 on success, 403 if the user is not the booking's owner or the session's instructor,
+     * 404 if the booking has no horse assigned, and 422 if the session is already completed.
+     *
+     * @param authentication the signed-in user.
+     * @param bookingId the id of the booking.
+     * @return an empty response.
+     */
+
+    @PreAuthorize("isAuthenticated()")
+    @DeleteMapping("/bookings/{bookingId}/horseAssignments")
+    public ResponseEntity<?> cancelHorseAssignment(Authentication authentication, @PathVariable Long bookingId) {
+        horseAssignmentService.cancelHorseAssignment(authentication.getName(), bookingId);
+        return ResponseEntity.status(HttpStatus.OK).body("horse assignment cancelled");
+    }
 }
