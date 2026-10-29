@@ -335,8 +335,6 @@ Interactive documentation: http://localhost:8000/swagger-ui/index.html#/
 - Postman: first request `201`, second request `409`
 - Console log lines: `waiting for the lock`, `holds the lock`, `released the lock`
 
-*Note: the in-memory lock only protects a single running instance of the app. The database row lock is what keeps the data safe if several instances run.*
-
 ### Scenario 2: Same horse in overlapping sessions
 
 | | |
