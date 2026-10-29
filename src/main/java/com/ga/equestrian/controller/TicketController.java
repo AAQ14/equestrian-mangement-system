@@ -96,8 +96,8 @@ public class TicketController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<TicketResponse> cancelTicket(@PathVariable Long id) {
-        Ticket ticket = ticketService.cancelTicket(id);
+    public ResponseEntity<TicketResponse> cancelTicket(Authentication authentication, @PathVariable Long id) {
+        Ticket ticket = ticketService.cancelTicket(authentication.getName(), id);
         return ResponseEntity.status(HttpStatus.OK).body(ticketMapper.toResponse(ticket));
     }
 

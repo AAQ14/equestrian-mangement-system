@@ -54,6 +54,10 @@ public class TournamentService {
             seats.add(seat);
         }
 
+        userRepository.findAllByRoleAndUserStatus(Role.CLIENT, UserStatus.ACTIVE).forEach(user ->
+                notificationService.sendInBackground(user.getId(),
+                        "New tournament: " + tournament.getName() + " on " + tournament.getDate(),
+                        NotificationType.TOURNAMENT_CREATED));
         seatRepository.saveAll(seats);
         return tournament;
     }
@@ -133,6 +137,10 @@ public class TournamentService {
         }
 
         tournamentRepository.save(tournament);
+        ticketRepository.findAllByTournamentIdAndTicketStatusIn(id, List.of(TicketStatus.PENDING, TicketStatus.CONFIRMED))
+                .forEach(ticket -> notificationService.sendInBackground(ticket.getUser().getId(),
+                        "The details of " + tournament.getName() + " have changed.",
+                        NotificationType.TOURNAMENT_UPDATED));
         return tournament;
     }
 
