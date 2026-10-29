@@ -37,5 +37,7 @@ public enum AuditAction {
     /** A client moved a ticket to another seat. */
     CHANGE_TICKET_SEAT,
     /** A client tried to buy a seat that was already sold. */
-    SEAT_CONFLICT
+    SEAT_CONFLICT,
+    CHANGE_HORSE,
+    REMOVE_HORSE
 }

@@ -1,6 +1,7 @@
 package com.ga.equestrian.repository;
 
 import com.ga.equestrian.model.entity.User;
+import com.ga.equestrian.model.enums.Role;
 import com.ga.equestrian.model.enums.UserStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
@@ -22,4 +23,13 @@ public interface UserRepository extends JpaRepository<User, Long> {
      * @return the matching users, or an empty list if there are none.
      */
     List<User> findByUserStatus(UserStatus userStatus);
+    /**
+     * Finds all the users who have a given role and status.
+     *
+     * @param role the role of the users.
+     * @param userStatus the status of the users.
+     * @return the matching users, empty if there are none.
+     */
+    List<User> findAllByRoleAndUserStatus(Role role, UserStatus userStatus);
+
 }

@@ -3,9 +3,7 @@ package com.ga.equestrian.service;
 import com.ga.equestrian.dto.request.TicketRequest;
 import com.ga.equestrian.exception.*;
 import com.ga.equestrian.model.entity.*;
-import com.ga.equestrian.model.enums.SeatStatus;
-import com.ga.equestrian.model.enums.TicketStatus;
-import com.ga.equestrian.model.enums.TournamentStatus;
+import com.ga.equestrian.model.enums.*;
 import com.ga.equestrian.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +31,8 @@ public class TicketService {
     private final ConcurrentHashMap<Long, ReentrantLock> seatLocks = new ConcurrentHashMap<>();
     private final TransactionTemplate transactionTemplate;
     private final ReentrantLock updateLock = new ReentrantLock();
+    private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
 
     public Ticket buyTicket(String email, Long tournamentId, TicketRequest ticketRequest){
@@ -40,23 +40,40 @@ public class TicketService {
         //one lock per seat: get this seat's lock from the map, or create it the first time someone buys this seat.
         // Buyers of the same seat get the same lock, buyers of other seats get different locks, so they don't wait.
         ReentrantLock lock = seatLocks.computeIfAbsent(seatId, id-> new ReentrantLock());
-        System.out.println("Thread [" + Thread.currentThread().getName() + "] is waiting for the lock of seat " + seatId);
+       log.info("Thread [" + Thread.currentThread().getName() + "] is waiting for the lock of seat " + seatId);
 
+        Ticket ticket;
         // Blocks here. If another thread holds this seat's lock, this thread waits until it is released.
         lock.lock();
         try {
-            System.out.println("Current thread [ " + Thread.currentThread().getName() + " ] holds the lock of the seat " + seatId);
+           log.info("Current thread [ " + Thread.currentThread().getName() + " ] holds the lock of the seat " + seatId);
             // Runs processPurchase inside a database transaction that COMMITS before execute() returns.
             // This matters: the lock is released only after the commit, so the next thread sees the seat as SOLD.
-            Ticket ticket = transactionTemplate.execute(status -> processPurchase(email, tournamentId, ticketRequest));
-            System.out.println("Seat " + seatId + " sold by thread [" + Thread.currentThread().getName() + "]");
-            return ticket;
-        }finally {
+             ticket = transactionTemplate.execute(status -> processPurchase(email, tournamentId, ticketRequest));
+           log.info("Seat " + seatId + " sold by thread [" + Thread.currentThread().getName() + "]");
+            Thread.sleep(4000);
+        }catch (SeatAlreadySoldException e) {
+            log.warn("Ticket purchase conflict: seat={}, thread={}", seatId, Thread.currentThread().getName());
+            auditLogService.record(email, AuditAction.SEAT_CONFLICT, "Seat", seatId,
+                    "Seat " + seatId + " was already sold");
+            throw e;
+        }catch (InterruptedException ex){
+            throw new RuntimeException(ex);
+        }
+        finally {
             // finally always runs, even when processPurchase throws (for example SeatAlreadySoldException),
             // so a failed purchase can never leave the seat locked forever.
             lock.unlock();
-            System.out.println("Thread [" + Thread.currentThread().getName() + "] released the lock of the seat " + seatId);
+            log.info("Thread [" + Thread.currentThread().getName() + "] released the lock of the seat " + seatId);
         }
+        auditLogService.record(email, AuditAction.BUY_TICKET, "Ticket", ticket.getId(),
+                "Bought seat " + seatId + " of tournament " + tournamentId);
+        notificationService.sendInBackground(ticket.getUser().getId(),
+                "Your ticket for seat " + ticket.getSeat().getSeatNumber() + " of "
+                        + ticket.getTournament().getName() + " was bought successfully.",
+                NotificationType.TICKET_PURCHASED);
+        return ticket;
+
     }
 
 
@@ -100,11 +117,6 @@ public class TicketService {
        if(seat.getSeatStatus() != SeatStatus.AVAILABLE){
            log.warn("Ticket purchase conflict: seat={} already sold, thread={}", seatId, Thread.currentThread().getName());
            throw new SeatAlreadySoldException("Seat " + seat.getSeatNumber() + " is already sold.");
-       }
-       try {
-           Thread.sleep(200);
-       } catch (InterruptedException e){
-           Thread.currentThread().interrupt();
        }
 
        seat.setSeatStatus(SeatStatus.SOLD);
@@ -165,9 +177,16 @@ public class TicketService {
         );
 
         if(!ticket.getUser().getEmail().equals(email)){
+            log.warn("Ticket cancel denied: ticket={}, thread={}", id, Thread.currentThread().getName());
             throw new AccessDeniedException("You can only cancel your own tickets. ");
         }
-        return cancel(ticket);
+        Ticket cancelled = cancel(ticket);
+        auditLogService.record(email, AuditAction.CANCEL_TICKET, "Ticket", id,
+                "Ticket " + id + " cancelled by its owner, seat " + cancelled.getSeat().getId() + " released");
+        notificationService.sendInBackground(cancelled.getUser().getId(),
+                "Your ticket for seat " + cancelled.getSeat().getSeatNumber() + " was cancelled successfully.",
+                NotificationType.TICKET_CANCELLED);
+        return cancelled;
     }
 
     /**
@@ -181,11 +200,17 @@ public class TicketService {
      * @throws TicketCancellationNotAllowedException if the tournament is not upcoming.
      */
     @Transactional
-    public Ticket cancelTicket(Long id) {
+    public Ticket cancelTicket(String email, Long id) {
         Ticket ticket = ticketRepository.findById(id).orElseThrow(
                 ()->new InformationNotFoundException("Ticket with this id " + id + " not found.")
         );
-        return cancel(ticket);
+        Ticket cancelled = cancel(ticket);
+        auditLogService.record(email, AuditAction.CANCEL_TICKET, "Ticket", id,
+                "Ticket " + id + " cancelled by an admin, seat " + cancelled.getSeat().getId() + " released");
+        notificationService.sendInBackground(cancelled.getUser().getId(),
+                "Your ticket for seat " + cancelled.getSeat().getSeatNumber() + " was cancelled by the admin.",
+                NotificationType.TICKET_CANCELLED);
+        return cancelled;
 
     }
 
@@ -199,8 +224,11 @@ public class TicketService {
      * @throws TicketCancellationNotAllowedException if the tournament is not upcoming.
      */
     private Ticket cancel(Ticket ticket){
+        log.info("Ticket cancel started: ticket={}, seat={}, thread={}",
+                ticket.getId(), ticket.getSeat().getId(), Thread.currentThread().getName());
 
         if(ticket.getTicketStatus().equals(TicketStatus.CANCELLED)){
+            log.warn("Ticket cancel rejected: ticket={} is already cancelled, thread={}", ticket.getId(), Thread.currentThread().getName());
             throw new TicketAlreadyCancelledException("This ticket already cancelled.");
         }
 
@@ -213,17 +241,10 @@ public class TicketService {
         seatRepository.save(seat);
 
         ticket.setTicketStatus(TicketStatus.CANCELLED);
-//        Payment payment = paymentRepository.findById(ticket.getPayment().getId()).orElseThrow(
-//                () -> new InformationNotFoundException("payment with this id " + ticket.getPayment().getId() + " not found")
-//        );
-//        if(payment.getPaymentStatus().equals(PaymentStatus.COMPLETED)){
-//            payment.setPaymentStatus(PaymentStatus.REFUNDED);
-//        }else if(payment.getPaymentStatus().equals(PaymentStatus.PENDING)){
-//            payment.setPaymentStatus(PaymentStatus.FAILED);
-//        }
-//        paymentRepository.save(payment);
-        ticketRepository.save(ticket);
+        Ticket cancelled = ticketRepository.save(ticket);
 
+        log.info("Ticket cancel succeeded: ticket={}, seat={} is available again, thread={}",
+                ticket.getId(), seat.getId(), Thread.currentThread().getName());
         return ticket;
     }
 
@@ -239,12 +260,30 @@ public class TicketService {
      * @return the updated ticket.
      */
     public Ticket updateTicket(String email, Long id, TicketRequest ticketRequest){
+        log.info("Thread [{}] is waiting for the seat change lock: ticket={}", Thread.currentThread().getName(), id);
+        Ticket updated;
         updateLock.lock();
         try {
-            return transactionTemplate.execute(status -> updateTicketProcess(email, id, ticketRequest));
-        } finally {
-            updateLock.unlock();
+            log.info("Thread [{}] holds the seat change lock: ticket={}", Thread.currentThread().getName(), id);
+            updated=  transactionTemplate.execute(status -> updateTicketProcess(email, id, ticketRequest));
+            Thread.sleep(4000);
+        }catch (InterruptedException ex){
+            throw new RuntimeException(ex);
         }
+        catch (SeatAlreadySoldException e) {
+            auditLogService.record(email, AuditAction.SEAT_CONFLICT, "Seat", ticketRequest.getSeatId(),
+                    "Seat " + ticketRequest.getSeatId() + " was already sold when changing ticket " + id);
+            throw e;
+        }finally {
+            updateLock.unlock();
+            log.info("Thread [{}] released the seat change lock: ticket={}", Thread.currentThread().getName(), id);
+        }
+        auditLogService.record(email, AuditAction.CHANGE_TICKET_SEAT, "Ticket", id,
+                "Ticket " + id + " moved to seat " + ticketRequest.getSeatId());
+        notificationService.sendInBackground(updated.getUser().getId(),
+                "Your ticket was moved to seat " + updated.getSeat().getSeatNumber() + " successfully.",
+                NotificationType.TICKET_SEAT_CHANGED);
+        return updated;
     }
 
     /**
@@ -283,7 +322,7 @@ public class TicketService {
 
         Long oldSeatId = ticket.getSeat().getId();
         if(oldSeatId.equals(newSeatId)) {
-            throw new SeatAlreadySoldException("This is already your seat.");
+            throw new InformationExistException("This is already your seat.");
         }
 
         log.info("Ticket seat change started: ticket={}, oldSeat={}, newSeat={}, thread={}",
@@ -302,7 +341,7 @@ public class TicketService {
             throw new InvalidTournamentException("Seat " + newSeat.getSeatNumber() + " does not belong to this tournament. ");
         }
         if(newSeat.getSeatStatus() != SeatStatus.AVAILABLE){
-            log.warn("Ticket purchase conflict: newSeat={} already sold, thread={}", newSeatId, Thread.currentThread().getName());
+            log.warn("Ticket change conflict: newSeat={} already sold, thread={}", newSeatId, Thread.currentThread().getName());
             throw new SeatAlreadySoldException("Seat " + newSeat.getSeatNumber() + " is already sold.");
         }
 
@@ -314,6 +353,8 @@ public class TicketService {
         ticket.setSeat(newSeat);
         ticketRepository.save(ticket);
 
+        log.info("Ticket seat change succeeded: ticket={}, oldSeat={}, newSeat={}, thread={}",
+                id, oldSeatId, newSeatId, Thread.currentThread().getName());
         return ticket;
     }
 }

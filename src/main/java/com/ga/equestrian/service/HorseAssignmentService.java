@@ -5,10 +5,7 @@ import com.ga.equestrian.exception.InformationExistException;
 import com.ga.equestrian.exception.InformationNotFoundException;
 import com.ga.equestrian.exception.InvalidBookingException;
 import com.ga.equestrian.model.entity.*;
-import com.ga.equestrian.model.enums.AssignmentStatus;
-import com.ga.equestrian.model.enums.BookingStatus;
-import com.ga.equestrian.model.enums.HorseStatus;
-import com.ga.equestrian.model.enums.SessionStatus;
+import com.ga.equestrian.model.enums.*;
 import com.ga.equestrian.repository.BookingRepository;
 import com.ga.equestrian.repository.HorseAssignmentRepository;
 import com.ga.equestrian.repository.HorseRepository;
@@ -38,6 +35,8 @@ public class HorseAssignmentService {
     private final UserRepository userRepository;
     private final ConcurrentHashMap<Long, ReentrantLock> assignsLock = new ConcurrentHashMap<>();
     private final TransactionTemplate transactionTemplate;
+    private final AuditLogService auditLogService;
+    private final NotificationService notificationService;
 
     /**
      * Assigns a horse to a booking. A lock on the horse makes sure only one thread at a time
@@ -52,12 +51,22 @@ public class HorseAssignmentService {
         Long horseId = horseAssignmentRequest.getHorseId();
         ReentrantLock lock = assignsLock.computeIfAbsent(horseId, id ->new ReentrantLock());
 
+
+        HorseAssignment assignment;
+        log.info("Thread [{}] is waiting for the lock of horse {}", Thread.currentThread().getName(), horseId);
         lock.lock();
         try{
-            return transactionTemplate.execute(status -> assignHorseProcess(email, bookingId, horseAssignmentRequest));
+            log.info("Thread [{}] holds the lock of horse {}", Thread.currentThread().getName(), horseId);
+            assignment =  transactionTemplate.execute(status -> assignHorseProcess(email, bookingId, horseAssignmentRequest));
+            Thread.sleep(4000);
+        } catch (InterruptedException ex)
+        {
+            throw new RuntimeException(ex);
         }finally {
             lock.unlock();
+            log.info("Thread [{}] released the lock of horse {}", Thread.currentThread().getName(), horseId);
         }
+        return assignment;
     }
 
     /**
@@ -102,6 +111,8 @@ public class HorseAssignmentService {
         boolean isBookingOwner = booking.getUser().getEmail().equals(email);
         boolean isInstructor = ridingSession.getInstructor().getUser().getEmail().equals(email);
 
+        log.warn("Horse assignment denied: booking={}, thread={}", bookingId, Thread.currentThread().getName());
+
         if (!isBookingOwner && !isInstructor) {
             throw new AccessDeniedException("You can only cancel the horse of your own booking or your own session.");
         }
@@ -129,8 +140,19 @@ public class HorseAssignmentService {
         assignment.setHorse(horse);
         assignment.setRidingSession(ridingSession);
         log.info("Horse assignment succeeded: booking={}, horse={}, session={}, thread={}", bookingId, horseId, ridingSession.getId(), Thread.currentThread().getName());
-        horseAssignmentRepository.save(assignment);
-        return assignment;
+        HorseAssignment saved = horseAssignmentRepository.save(assignment);
+        log.info("Horse assignment succeeded: booking={}, horse={}, session={}, thread={}",
+                bookingId, horseId, ridingSession.getId(), Thread.currentThread().getName());
+
+        auditLogService.record(email, AuditAction.ASSIGN_HORSE, "HorseAssignment", saved.getId(),
+                "Horse " + horseId + " assigned to booking " + bookingId);
+
+        String message = isBookingOwner
+                ? "A horse was assigned to your booking for " + ridingSession.getDate() + " successfully."
+                : "The instructor assigned a horse to your booking for " + ridingSession.getDate() + ".";
+
+        notificationService.sendInBackground(booking.getUser().getId(), message, NotificationType.HORSE_ASSIGNED);
+        return saved;
     }
 
     /**
@@ -163,12 +185,20 @@ public class HorseAssignmentService {
         Long horseId = horseAssignmentUpdateRequest.getHorseId();
         ReentrantLock lock = assignsLock.computeIfAbsent(horseId, id ->new ReentrantLock());
 
+        HorseAssignment assignment;
+        log.info("Thread [{}] is waiting for the lock of horse {}", Thread.currentThread().getName(), horseId);
         lock.lock();
         try{
-            return transactionTemplate.execute(status -> updateHorseAssignmentProcess(email, bookingId, horseAssignmentUpdateRequest));
-        } finally {
+            log.info("Thread [{}] holds the lock of horse {}", Thread.currentThread().getName(), horseId);
+            assignment = transactionTemplate.execute(status -> updateHorseAssignmentProcess(email, bookingId, horseAssignmentUpdateRequest));
+            Thread.sleep(4000);
+        } catch (InterruptedException ex) {
+            throw new RuntimeException(ex);
+        }
+        finally {
             lock.unlock();
         }
+        return assignment;
     }
 
     /**
@@ -236,11 +266,19 @@ public class HorseAssignmentService {
             throw new InformationExistException("This horse is already assigned to another session at this time.");
         }
 
-
+        Long oldHorseId = horseAssignment.getHorse().getId();
         horseAssignment.setHorse(horse);
         HorseAssignment saved = horseAssignmentRepository.save(horseAssignment);
-        log.info("Horse change succeeded: booking={}, newHorse={}, thread={}",
-                bookingId, horseId, Thread.currentThread().getName());
+        log.info("Horse change succeeded: booking={}, oldHorse={}, newHorse={}, thread={}",
+                bookingId, oldHorseId, horseId, Thread.currentThread().getName());
+        auditLogService.record(email, AuditAction.CHANGE_HORSE, "HorseAssignment", saved.getId(),
+                "Booking " + bookingId + " moved from horse " + oldHorseId + " to horse " + horseId);
+
+        String message = isBookingOwner
+                ? "The horse of your booking for " + ridingSession.getDate() + " was changed successfully."
+                : "The instructor changed the horse of your booking for " + ridingSession.getDate() + ".";
+
+        notificationService.sendInBackground(booking.getUser().getId(), message, NotificationType.HORSE_ASSIGNMENT_UPDATED);
         return saved;
     }
 
@@ -303,11 +341,18 @@ public class HorseAssignmentService {
             throw new InvalidBookingException("The session is cancelled already.");
         }
 
+        Long horseId = horseAssignment.getHorse().getId();
         horseAssignmentRepository.delete(horseAssignment);
-//        booking.setHorseAssignment(null);
-//        bookingRepository.save(booking);
-
         log.info("Horse assignment cancelled: booking={}, horse={}, thread={}",
                 bookingId, horseAssignment.getHorse().getId(), Thread.currentThread().getName());
+        auditLogService.record(email, AuditAction.REMOVE_HORSE, "HorseAssignment", horseAssignment.getId(),
+                "Horse " + horseId + " removed from booking " + bookingId);
+
+        String message = isBookingOwner
+                ? "The horse of your booking for " + session.getDate() + " was removed successfully."
+                : "The instructor removed the horse of your booking for " + session.getDate() + ".";
+
+        notificationService.sendInBackground(horseAssignment.getBooking().getUser().getId(), message, NotificationType.HORSE_ASSIGNMENT_CANCELLED);
+
     }
 }

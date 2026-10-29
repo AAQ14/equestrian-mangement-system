@@ -33,5 +33,8 @@ public enum NotificationType {
     /** A booking's horse was changed, sent to the booked client. */
     HORSE_ASSIGNMENT_UPDATED,
     /** A booking's horse was removed, sent to the booked client. */
-    HORSE_ASSIGNMENT_CANCELLED
+    HORSE_ASSIGNMENT_CANCELLED,
+    /** A new tournament was created, sent to every active client. */
+    TOURNAMENT_CREATED,
+
 }
