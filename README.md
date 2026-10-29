@@ -162,7 +162,43 @@ Interactive documentation: http://localhost:8000/swagger-ui/index.html#/
 | GET | `/api/notifications/stream` | Open the real-time SSE stream | Private |
 | GET | `/api/notifications` | List my notifications, newest first | Private |
 
-> Keep this table consistent with the code. Update the Access column if you change the security configuration.
+### Tournaments
+
+| Request Type | URL | Functionality | Access |
+|---|---|---|---|
+| POST | `/api/tournaments` | Create a tournament | Admin |
+| GET | `/api/tournaments` | List all tournaments | Private |
+| GET | `/api/tournaments/{id}` | Get a tournament | Private |
+| PATCH | `/api/tournaments/{id}` | Update a tournament | Admin |
+| PATCH | `/api/tournaments/{id}/cancel` | Cancel a tournament and its active tickets | Admin |
+
+### Seats
+
+| Request Type | URL | Functionality | Access |
+|---|---|---|---|
+| GET | `/api/seats` | List all seats | Private |
+| GET | `/api/seats/{tournamentId}` | List the seats of a tournament | Private |
+
+### Tickets
+
+| Request Type | URL | Functionality | Access |
+|---|---|---|---|
+| POST | `/api/tickets/{tournamentId}` | Buy a ticket for a seat (`409` if already sold) | Private |
+| GET | `/api/tickets` | List all tickets | Admin |
+| GET | `/api/tickets/my` | My tickets | Private |
+| PATCH | `/api/tickets/{id}/update/my` | Change my ticket (e.g. its seat) | Private (own only) |
+| PUT | `/api/tickets/{id}/cancel/my` | Cancel my ticket | Private (own only) |
+| PATCH | `/api/tickets/{id}/cancel` | Cancel any ticket | Admin |
+
+### Horse Assignments
+
+| Request Type | URL | Functionality | Access |
+|---|---|---|---|
+| POST | `/api/bookings/{bookingId}/horseAssignments` | Assign a horse to a booking (`409` if the horse is busy) | Private (booking owner or session instructor) |
+| GET | `/api/bookings/{bookingId}/horseAssignments` | Get the horse assigned to a booking | Private (booking owner or session instructor) |
+| GET | `/api/horseAssignments/my` | My horse assignments | Private |
+| PATCH | `/api/bookings/{bookingId}/horseAssignments/` | Change the horse of a booking | Private |
+| DELETE | `/api/bookings/{bookingId}/horseAssignments` | Remove the horse from a booking | Private (booking owner or session instructor) |
 
 ### Demonstrating real-time notifications
 1. In Postman (or `curl -N -H "Authorization: Bearer <token>" http://localhost:8000/api/notifications/stream`), open the stream with a client's token. The request stays open.
@@ -278,6 +314,37 @@ As a client, I want ticket emails to be sent, so that my purchase request respon
 - As a developer, I want the API documented with Swagger, so that I can understand and test the endpoints.
 - As a developer, I want ticket purchases to run in a transaction with a locked seat, so that the database stays consistent under concurrent requests.
 - As a developer, I want important operations logged without sensitive data, so that I can diagnose failures safely.
+
+## Race Conditions
+
+### Scenario 1: Two clients buy the same seat
+
+| | |
+|---|---|
+| **Shared resource** | The `Seat` row, specifically `seatStatus` |
+| **Why it runs concurrently** | Each HTTP request is handled by its own thread, so two buyers are processed in parallel |
+| **The race** | Buying is "check, then update". Both threads read `AVAILABLE` before either saves `SOLD` |
+| **Result without control** | The seat is sold twice and two tickets exist for one seat |
+| **Prevention** | A per-seat `ReentrantLock` plus a database row lock (`SELECT ... FOR UPDATE`), inside a transaction. The lock is released only after the commit, so the second buyer waits, sees `SOLD`, and gets `409 SEAT_ALREADY_SOLD` |
+
+**Evidence**
+- Concurrent test (20 threads, same seat) before the lock: several successes and several tickets
+- After the lock: 1 success, 19 conflicts, 1 ticket
+- Postman: first request `201`, second request `409`
+- Console log lines: `waiting for the lock`, `holds the lock`, `released the lock`
+
+*Note: the in-memory lock only protects a single running instance of the app. The database row lock is what keeps the data safe if several instances run.*
+
+### Scenario 2: Same horse in overlapping sessions
+
+| | |
+|---|---|
+| **Shared resource** | A horse at a given time slot |
+| **Why it runs concurrently** | Two requests assign the same horse at the same moment |
+| **The race** | Both threads check "is the horse free?", both see yes, and both save |
+| **Result without control** | The horse is assigned to two overlapping sessions |
+| **Prevention** | The same lock-plus-transaction approach, so the second request gets `409` |
+
 
 ## Credits & External Resources
 
