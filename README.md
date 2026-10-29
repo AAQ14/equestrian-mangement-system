@@ -279,7 +279,9 @@ Interactive documentation: http://localhost:8000/swagger-ui/index.html#/
 - As a client, I want to see seats become unavailable live, so that I don’t pick a seat that was just taken.
 - As a client, I want to receive a notification when my ticket is pending, confirmed or cancelled, so that I know its status.
 - As a client, I want to get a clear conflict message if someone else takes my seat first, so that I can pick another one.
-As a client, I want ticket emails to be sent, so that my purchase request responds quickly.
+- As a client, I want ticket emails to be sent, so that my purchase request responds quickly.
+- As a client, I want to assign a horse to a booking, so that I know which horse I will ride in my session.
+- As a client, I want to change the horse of my booking or remove it, So that I can switch to a different horse if my plans change.
 
 ### Instructor
 - As an instructor, I want to create riding sessions with a date, time, price, skill level and capacity, so that clients can book them.
