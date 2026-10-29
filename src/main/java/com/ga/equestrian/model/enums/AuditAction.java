@@ -23,5 +23,21 @@ public enum AuditAction {
     /** A file uploaded (e.g. a picture profile).*/
     UPLOAD_FILE,
     /** An admin deleted a user. */
-    DELETE_USER
+    DELETE_USER,
+    /** An admin created a tournament. */
+    CREATE_TOURNAMENT,
+    /** An admin updated a tournament. */
+    UPDATE_TOURNAMENT,
+    /** An admin cancelled a tournament. */
+    CANCEL_TOURNAMENT,
+    /** A client bought a ticket. */
+    BUY_TICKET,
+    /** A ticket was cancelled. */
+    CANCEL_TICKET,
+    /** A client moved a ticket to another seat. */
+    CHANGE_TICKET_SEAT,
+    /** A client tried to buy a seat that was already sold. */
+    SEAT_CONFLICT,
+    CHANGE_HORSE,
+    REMOVE_HORSE
 }

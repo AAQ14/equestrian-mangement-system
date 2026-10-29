@@ -127,7 +127,7 @@ public class GlobalExceptionHandler{
      */
     @ExceptionHandler(InvalidBookingException.class)
     public ResponseEntity<ErrorResponse> handleInvalidBooking(InvalidBookingException ex, HttpServletRequest request) {
-        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_BOOKING", ex.getMessage(), request);
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "INVALID_BOOKING", ex.getMessage(), request);
     }
 
 
@@ -177,10 +177,85 @@ public class GlobalExceptionHandler{
      */
     @ExceptionHandler(InvalidUserActionException.class)
     public ResponseEntity<ErrorResponse> handleInvalidUserAction(InvalidUserActionException ex, HttpServletRequest request){
-        return buildResponse(HttpStatus.UNPROCESSABLE_ENTITY, "INVALID_USER_ACTION", ex.getMessage(), request);
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "INVALID_USER_ACTION", ex.getMessage(), request);
     }
 
     /**
+     * Handles attempts to buy a seat that is already sold.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 409 response with error details.
+     */
+    @ExceptionHandler(SeatAlreadySoldException.class)
+    public ResponseEntity<ErrorResponse> handleSeatAlreadySold(SeatAlreadySoldException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.CONFLICT, "SEAT_ALREADY_SOLD", ex.getMessage(), request);
+    }
+
+    /**
+     * Handles attempts to cancel a ticket that is already cancelled.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 409 response with error details.
+     */
+    @ExceptionHandler(TicketAlreadyCancelledException.class)
+    public ResponseEntity<ErrorResponse> handleTicketAlreadyCancelled(TicketAlreadyCancelledException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.CONFLICT, "TICKET_ALREADY_CANCELLED", ex.getMessage(), request);
+    }
+
+    /**
+     * Handles attempts to cancel a ticket that is not allowed to be cancelled.
+     * E.g. the tournament status is anything else upcoming.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 422 response with error details.
+     */
+    @ExceptionHandler(TicketCancellationNotAllowedException.class)
+    public ResponseEntity<ErrorResponse> handleTicketCancellationNotAllowed(TicketCancellationNotAllowedException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "TICKET_CANCELLATION_NOT_ALLOWED", ex.getMessage(), request);
+    }
+
+    /**
+     * Handles requests that break a tournament rule, such as buying or changing a ticket
+     * for a tournament that is not upcoming.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 422 response with error details.
+     */
+    @ExceptionHandler(InvalidTournamentException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidTournament(InvalidTournamentException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "INVALID_TOURNAMENT", ex.getMessage(), request);
+    }
+
+    /**
+     * Handles actions on riding sessions that break a business rule.
+     *
+     * @param ex the exception thrown.
+     * @param request the request that caused the error.
+     * @return a 422 response with error details.
+     */
+    @ExceptionHandler(InvalidSessionException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidSessionException(InvalidSessionException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.UNPROCESSABLE_CONTENT, "INVALID_SESSION", ex.getMessage(), request);
+    }
+
+    /**
+     * Handles requests that exceed the rate limit, such as too many login attempts in a minute.
+     *
+     * @param ex the exception thrown
+     * @param request the request that caused the error.
+     * @return a 429 response with error details.
+     */
+    @ExceptionHandler(TooManyRequestsException.class)
+    public ResponseEntity<ErrorResponse> handleTooManyRequestsException(TooManyRequestsException ex, HttpServletRequest request){
+        return buildResponse(HttpStatus.TOO_MANY_REQUESTS, "TOO_MANY_REQUESTS", ex.getMessage(), request);
+    }
+
+    /**
+     *
      * Builds an error response.
      *
      * @param status the HTTP status to return.

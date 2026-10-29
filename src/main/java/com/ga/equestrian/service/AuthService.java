@@ -3,10 +3,7 @@ package com.ga.equestrian.service;
 import com.ga.equestrian.dto.request.RegisterRequest;
 import com.ga.equestrian.dto.response.LoginResponse;
 import com.ga.equestrian.dto.response.UserResponse;
-import com.ga.equestrian.exception.InformationExistException;
-import com.ga.equestrian.exception.InformationNotFoundException;
-import com.ga.equestrian.exception.InvalidCodeException;
-import com.ga.equestrian.exception.InvalidPasswordException;
+import com.ga.equestrian.exception.*;
 import com.ga.equestrian.mapper.UserMapper;
 import com.ga.equestrian.model.entity.User;
 import com.ga.equestrian.model.enums.CodePurpose;
@@ -18,9 +15,13 @@ import com.ga.equestrian.security.JWTUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Handles registration, login and the other authentication rules.
@@ -35,6 +36,17 @@ public class AuthService {
     private final JWTUtil jwtUtil;
     private final EmailService emailService;
     private final VerificationService verificationService;
+
+    private final int MAX_LOG_ATTEMPTS = 5;
+    private final ConcurrentHashMap<String , AtomicInteger> loginAttempts = new ConcurrentHashMap<>();
+
+    /**
+     * Clears the login attempts in every minute.
+     */
+    @Scheduled(fixedRate = 6000)
+    public void clearLoggingAttempts(){
+        loginAttempts.clear();
+    }
 
 
     /**
@@ -95,8 +107,14 @@ public class AuthService {
      * @return a JWT login token containing the user's email and role.
      * @throws InformationNotFoundException if the email doesn't exit or the password is wrong.
      * @throws InvalidCodeException if the user's email is not verified.
+     * @throws TooManyRequestsException if the email made too many login attempts in the last minute.
      */
     public LoginResponse login(String email, String password) {
+        int attempts = loginAttempts.computeIfAbsent(email, key->new AtomicInteger()).getAndIncrement();
+        if(attempts > MAX_LOG_ATTEMPTS){
+            throw new TooManyRequestsException("Too many attempts, please try again in one minute.");
+        }
+
         String userEmail = email.trim().toLowerCase();
 
         User user = userRepository.findByEmail(email)

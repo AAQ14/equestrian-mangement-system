@@ -12,6 +12,7 @@ import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -92,19 +93,20 @@ public class RidingSessionController {
         RidingSessionResponse response = ridingSessionService.updateSession(id, request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
-
     /**
-     * Deletes a riding session by id.
-     * Returns 200 on success, 403 if the user is not an instructor,
-     * and 404 if the session does not exist.
      *
+     * Cancels a riding session and its active bookings. Instructor only.
+     * Returns 200 on success, 403 if the user is not the session's instructor,
+     * 404 if the session does not exist, and 422 if the session is already cancelled or completed.
+     *
+     * @param authentication the signed-in instructor.
      * @param id the session id.
-     * @return the deleted session.
+     * @return the cancelled session.
      */
-    @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
-    public ResponseEntity<RidingSessionResponse> deleteSession(@PathVariable Long id) {
-        RidingSessionResponse response = ridingSessionService.deleteSession(id);
+    @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<RidingSessionResponse> deleteSession(Authentication authentication,  @PathVariable Long id) {
+        RidingSessionResponse response = ridingSessionService.cancelSession(authentication.getName(), id);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 
