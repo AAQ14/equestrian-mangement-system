@@ -90,9 +90,7 @@ public class AuthController {
     @PostMapping("/users/reset-password")
     public ResponseEntity<MessageResponse> resetPassword(@RequestHeader("Authorization") String authorization, @Valid @RequestBody ResetPasswordRequest request){
         String resetToken = authorization.replace("Bearer ", "");
-
         authService.resetPassword(resetToken, request.getPassword());
-
         return ResponseEntity.ok(new MessageResponse("Password reset successfully"));
     }
 
@@ -104,9 +102,7 @@ public class AuthController {
      */
     @PostMapping("/users/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request){
-        System.out.println(request.getEmail()+ request.getPassword());
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        System.out.println(encoder.encode(request.getPassword()));
         LoginResponse loginResponse = authService.login(request.getEmail(), request.getPassword());
         return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
     }

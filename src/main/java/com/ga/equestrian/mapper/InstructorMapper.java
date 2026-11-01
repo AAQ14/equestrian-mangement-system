@@ -10,6 +10,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class InstructorMapper {
     public InstructorResponse toResponse(Instructor instructor){
-        return new InstructorResponse(instructor.getUser().getId(), instructor.getUser().getFirstName(), instructor.getUser().getLastName(),instructor.getSpecialization() , instructor.getExperienceYears(), instructor.getSkillLevel());
+        return new InstructorResponse(instructor.getId(), instructor.getUser().getFirstName(), instructor.getUser().getLastName(),instructor.getSpecialization() , instructor.getExperienceYears(), instructor.getSkillLevel());
     }
 }

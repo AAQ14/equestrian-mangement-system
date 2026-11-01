@@ -103,7 +103,7 @@ public class TicketController {
 
     @PreAuthorize("isAuthenticated()")
     @PatchMapping("/{id}/update/my")
-    public ResponseEntity<TicketResponse> updateTicket(Authentication authentication, @PathVariable Long id, @RequestBody TicketRequest ticketRequest){
+    public ResponseEntity<TicketResponse> updateTicket(Authentication authentication, @PathVariable Long id,@Valid @RequestBody TicketRequest ticketRequest){
         Ticket ticket = ticketService.updateTicket(authentication.getName(), id, ticketRequest);
         return ResponseEntity.status(HttpStatus.OK).body(ticketMapper.toResponse(ticket));
     }

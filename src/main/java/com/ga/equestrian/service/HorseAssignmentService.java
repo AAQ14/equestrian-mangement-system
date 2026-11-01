@@ -111,8 +111,12 @@ public class HorseAssignmentService {
         boolean isBookingOwner = booking.getUser().getEmail().equals(email);
         boolean isInstructor = ridingSession.getInstructor().getUser().getEmail().equals(email);
 
+        System.out.println(isInstructor);
         log.warn("Horse assignment denied: booking={}, thread={}", bookingId, Thread.currentThread().getName());
 
+        System.out.println("Signed in: " + email
+                + " | Session instructor: " + ridingSession.getInstructor().getUser().getEmail()
+                + " | Booking owner: " + booking.getUser().getEmail());
         if (!isBookingOwner && !isInstructor) {
             throw new AccessDeniedException("You can only cancel the horse of your own booking or your own session.");
         }
@@ -230,7 +234,9 @@ public class HorseAssignmentService {
         boolean isBookingOwner = horseAssignment.getBooking().getUser().getEmail().equals(email);
         boolean isInstructor = ridingSession.getInstructor().getUser().getEmail().equals(email);
 
+        System.out.println(isInstructor);
         if (!isBookingOwner && !isInstructor) {
+            log.warn("Horse assignment denied: booking={}, thread={}", bookingId, Thread.currentThread().getName());
             throw new AccessDeniedException("You can only update the horse of your own booking or your own session.");
         }
 
