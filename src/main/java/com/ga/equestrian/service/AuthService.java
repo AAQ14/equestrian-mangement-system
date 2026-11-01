@@ -43,7 +43,7 @@ public class AuthService {
     /**
      * Clears the login attempts in every minute.
      */
-    @Scheduled(fixedRate = 6000)
+    @Scheduled(fixedRate = 60000)
     public void clearLoggingAttempts(){
         loginAttempts.clear();
     }
@@ -110,14 +110,15 @@ public class AuthService {
      * @throws TooManyRequestsException if the email made too many login attempts in the last minute.
      */
     public LoginResponse login(String email, String password) {
-        int attempts = loginAttempts.computeIfAbsent(email, key->new AtomicInteger()).getAndIncrement();
+        String userEmail = email.trim().toLowerCase();
+
+        int attempts = loginAttempts.computeIfAbsent(userEmail, key->new AtomicInteger()).getAndIncrement();
         if(attempts > MAX_LOG_ATTEMPTS){
             throw new TooManyRequestsException("Too many attempts, please try again in one minute.");
         }
 
-        String userEmail = email.trim().toLowerCase();
 
-        User user = userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(userEmail)
                 .orElseThrow(
                         ()->new InformationNotFoundException("User with this email " + email + " not found")
                 );
@@ -128,6 +129,8 @@ public class AuthService {
         if(!passwordEncoder.matches(password,  user.getPassword())){
             throw new InformationNotFoundException("Invalid password or email.");
         }
+
+        loginAttempts.remove(userEmail);
 
         String token =  jwtUtil.generateLoginToken(user.getEmail(), user.getRole());
         return new LoginResponse(

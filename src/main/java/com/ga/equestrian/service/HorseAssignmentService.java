@@ -111,13 +111,9 @@ public class HorseAssignmentService {
         boolean isBookingOwner = booking.getUser().getEmail().equals(email);
         boolean isInstructor = ridingSession.getInstructor().getUser().getEmail().equals(email);
 
-        System.out.println(isInstructor);
-        log.warn("Horse assignment denied: booking={}, thread={}", bookingId, Thread.currentThread().getName());
 
-        System.out.println("Signed in: " + email
-                + " | Session instructor: " + ridingSession.getInstructor().getUser().getEmail()
-                + " | Booking owner: " + booking.getUser().getEmail());
         if (!isBookingOwner && !isInstructor) {
+            log.warn("Horse assignment denied: booking={}, thread={}", bookingId, Thread.currentThread().getName());
             throw new AccessDeniedException("You can only cancel the horse of your own booking or your own session.");
         }
 
@@ -143,7 +139,6 @@ public class HorseAssignmentService {
         assignment.setBooking(booking);
         assignment.setHorse(horse);
         assignment.setRidingSession(ridingSession);
-        log.info("Horse assignment succeeded: booking={}, horse={}, session={}, thread={}", bookingId, horseId, ridingSession.getId(), Thread.currentThread().getName());
         HorseAssignment saved = horseAssignmentRepository.save(assignment);
         log.info("Horse assignment succeeded: booking={}, horse={}, session={}, thread={}",
                 bookingId, horseId, ridingSession.getId(), Thread.currentThread().getName());
