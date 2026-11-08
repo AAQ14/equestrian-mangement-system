@@ -30,6 +30,8 @@ public class JWTUtil {
 
     private static final String ROLE_CLAIM = "role";
 
+    private static final String USER_ID_CLAIM = "userId";
+
     private static final String PASSWORD_RESET_PURPOSE = "PASSWORD_RESET";
 
     @Value("${jwt-secret}")
@@ -60,8 +62,10 @@ public class JWTUtil {
      * @param role the user's role, so the server can authorize requests without a database lookup.
      * @return the signed token as string.
      */
-    public String generateLoginToken(String email, Role role){
-       return Jwts.builder().setSubject(email)
+    public String generateLoginToken(Long userId, String email, Role role){
+       return Jwts.builder().
+               setSubject(email)
+               .claim(USER_ID_CLAIM, userId)
                .claim(ROLE_CLAIM, role.name())
                .claim(PURPOSE_CLAIM, LOGIN_PURPOSE)
                .setIssuedAt(new Date()).setExpiration(new Date(System.currentTimeMillis() + jwtExpirationMs))
