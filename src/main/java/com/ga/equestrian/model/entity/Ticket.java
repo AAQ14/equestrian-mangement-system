@@ -51,7 +51,7 @@ public class Ticket {
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private TicketStatus ticketStatus = TicketStatus.PENDING;
+    private TicketStatus ticketStatus = TicketStatus.CONFIRMED;
 
     @Column(updatable = false)
     @CreationTimestamp
