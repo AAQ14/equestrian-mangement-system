@@ -1,7 +1,7 @@
 package com.ga.equestrian.tournamentservice.model.entity;
 
-import com.ga.equestrian.tournamentservice.tournamentservice.model.enums.PaymentMethod;
-import com.ga.equestrian.tournamentservice.tournamentservice.model.enums.PaymentStatus;
+import com.ga.equestrian.tournamentservice.model.enums.PaymentMethod;
+import com.ga.equestrian.tournamentservice.model.enums.PaymentStatus;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Getter;

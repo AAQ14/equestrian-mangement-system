@@ -5,10 +5,11 @@ import com.ga.equestrian.tournamentservice.dto.request.UpdateTournamentRequest;
 import com.ga.equestrian.tournamentservice.exception.InformationExistException;
 import com.ga.equestrian.tournamentservice.exception.InformationNotFoundException;
 import com.ga.equestrian.tournamentservice.exception.InvalidTournamentException;
+import com.ga.equestrian.tournamentservice.model.entity.*;
+import com.ga.equestrian.tournamentservice.model.enums.*;
 import com.ga.equestrian.tournamentservice.repository.SeatRepository;
 import com.ga.equestrian.tournamentservice.repository.TicketRepository;
 import com.ga.equestrian.tournamentservice.repository.TournamentRepository;
-import com.ga.equestrian.tournamentservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,8 +23,6 @@ public class TournamentService {
     private final TournamentRepository tournamentRepository;
     private final SeatRepository seatRepository;
     private final TicketRepository ticketRepository;
-    private final UserRepository userRepository;
-    private final NotificationService notificationService;
 
     /**
      *
@@ -51,10 +50,8 @@ public class TournamentService {
             seats.add(seat);
         }
 
-        userRepository.findAllByRoleAndUserStatus(Role.CLIENT, UserStatus.ACTIVE).forEach(user ->
-                notificationService.sendInBackground(user.getId(),
-                        "New tournament: " + tournament.getName() + " on " + tournament.getDate(),
-                        NotificationType.TOURNAMENT_CREATED));
+        // ToDo: publish TOURNAMENT_CREATED event. Notification-service will notify all active clients.
+
         seatRepository.saveAll(seats);
         return tournament;
     }
@@ -81,7 +78,7 @@ public class TournamentService {
 
         if(tournament.getTournamentStatus() != TournamentStatus.UPCOMING)
         {
-            throw new InvalidTournamentException("Only upcoming tournaments can cancelled.");
+            throw new InvalidTournamentException("Only upcoming tournaments can be updated.");
         }
 
         if(updateTournamentRequest.getName() != null){
@@ -134,10 +131,8 @@ public class TournamentService {
         }
 
         tournamentRepository.save(tournament);
-        ticketRepository.findAllByTournamentIdAndTicketStatusIn(id, List.of(TicketStatus.PENDING, TicketStatus.CONFIRMED))
-                .forEach(ticket -> notificationService.sendInBackground(ticket.getUser().getId(),
-                        "The details of " + tournament.getName() + " have changed.",
-                        NotificationType.TOURNAMENT_UPDATED));
+        //ToDo: publish TOURNAMENT_UPDATED event for each ticket holder.
+        // ticket.getUserId() gives the id of each holder.
         return tournament;
     }
 
@@ -147,24 +142,21 @@ public class TournamentService {
      * The user who cancelled the tournament will be notified.
      * Every ticket holder is then notified on the thread pool.
      *
+     * @param adminUserId the id of the admin who wants cancel the tournament.
      * @param id the id of the tournament.
      * @return the cancelled tournament.
      * @throws InformationNotFoundException if the tournament does not exist.
      * @throws InvalidTournamentException if the tournament is not upcoming.
      */
     @Transactional
-    public Tournament cancelTournament(String email, Long id){
-        User user = userRepository.findByEmail(email).orElseThrow(
-                ()-> new InformationNotFoundException("User with this email " + email + " not found.")
-        );
-
+    public Tournament cancelTournament(Long adminUserId, Long id){
         Tournament tournament = tournamentRepository.findById(id).orElseThrow(
                 () ->  new InformationNotFoundException("Tournament with this id " + id + " not found")
         );
 
         if(tournament.getTournamentStatus() != TournamentStatus.UPCOMING)
         {
-            throw new InvalidTournamentException("Only upcoming tournaments can cancelled.");
+            throw new InvalidTournamentException("Only upcoming tournaments can be cancelled.");
         }
 
         List<Ticket> tickets = ticketRepository.findAllByTournamentIdAndTicketStatusIn(id, List.of(TicketStatus.PENDING, TicketStatus.CONFIRMED));
@@ -188,11 +180,11 @@ public class TournamentService {
         tournamentRepository.save(tournament);
 
         for (Ticket ticket: tickets){
-            Long userId = ticket.getUser().getId();
-            notificationService.sendInBackground(userId,   "The tournament " + tournament.getName() + " of your ticket has been cancelled." ,NotificationType.TOURNAMENT_CANCELLED);
+            Long userId = ticket.getUserId();
+            //ToDo: send notification for each ticket holder of the same tournament that the tournament is cancelled.
         }
 
-        notificationService.sendInBackground(user.getId(),"Tournament " + tournament.getName() + " was cancelled and " + tickets.size() + " ticket holders were notified." , NotificationType.TOURNAMENT_CANCELLED);
+        //Todo: send a summary to the admin (adminUserId)
         return tournament;
     }
 

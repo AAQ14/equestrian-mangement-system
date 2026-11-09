@@ -5,6 +5,7 @@ import com.ga.equestrian.tournamentservice.dto.request.UpdateTournamentRequest;
 import com.ga.equestrian.tournamentservice.dto.response.TournamentResponse;
 import com.ga.equestrian.tournamentservice.mapper.TournamentMapper;
 import com.ga.equestrian.tournamentservice.model.entity.Tournament;
+import com.ga.equestrian.tournamentservice.security.AuthUser;
 import com.ga.equestrian.tournamentservice.service.TournamentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -12,6 +13,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -65,8 +67,8 @@ public class TournamentController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}/cancel")
-    public ResponseEntity<TournamentResponse> cancelTournament(Authentication authentication,  @PathVariable Long id){
-        Tournament tournament = tournamentService.cancelTournament(authentication.getName(), id);
+    public ResponseEntity<TournamentResponse> cancelTournament(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long id){
+        Tournament tournament = tournamentService.cancelTournament(authUser.userId(), id);
         return ResponseEntity.status(HttpStatus.OK).body(tournamentMapper.toResponse(tournament));
     }
 
