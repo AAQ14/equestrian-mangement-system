@@ -129,7 +129,7 @@ public class AuthService {
             throw new InformationNotFoundException("Invalid password or email.");
         }
 
-        String token =  jwtUtil.generateLoginToken(user.getEmail(), user.getRole());
+        String token =  jwtUtil.generateLoginToken(user.getId(), user.getEmail(), user.getRole());
         return new LoginResponse(
                 user.getFirstName(),
                 user.getLastName(),
