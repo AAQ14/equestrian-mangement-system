@@ -1,4 +1,4 @@
-package com.ga.equestrian.bookingservice.serivce;
+package com.ga.equestrian.bookingservice.service;
 import com.ga.equestrian.dto.request.HorseAssignmentRequest;
 import com.ga.equestrian.dto.request.HorseAssignmentUpdateRequest;
 import com.ga.equestrian.exception.InformationExistException;

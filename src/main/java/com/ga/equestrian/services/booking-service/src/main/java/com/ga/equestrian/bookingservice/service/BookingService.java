@@ -1,4 +1,4 @@
-package com.ga.equestrian.bookingservice.serivce;
+package com.ga.equestrian.bookingservice.service;
 
 import com.ga.equestrian.bookingservice.client.UserClient;
 import com.ga.equestrian.bookingservice.dto.request.*;
@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -32,29 +33,26 @@ public class BookingService {
 
     @Transactional
     public BookingResponse createBooking(AuthUser authUser, BookingRequest request){
-//        User signedInUser = userRepository.findByEmail(email).orElseThrow(
-//                ()->new InformationNotFoundException("User with email " + email + " not found.")
-//        );
 
         Long userBookedId = authUser.userId();
 
-        User bookedUser = signedInUser;
 
         if(request.getUserId()!=null) {
             if (authUser.role().equals("CLIENT")) {
                 throw new AccessDeniedException("Clients can only book for themselves.");
             }
-            bookedUser = userRepository.findById(request.getUserId()).orElseThrow(
-                    () -> new InformationNotFoundException("User with id " + request.getUserId() + " not found.")
-            );
-        }
-            if(bookedUser.getUserStatus() != UserStatus.ACTIVE){
+            UserSummary bookedUser = userClient.getUser(request.getUserId());
+
+            if (bookedUser.userStatus() != UserStatus.ACTIVE) {
                 throw new InvalidBookingException("Bookings can only be made for active users.");
             }
+
+            userBookedId = bookedUser.id();
+         }
             RidingSession session = ridingSessionRepository.findById(request.getRidingSessionId()).orElseThrow(
                     () -> new InformationNotFoundException("Riding session with id " + request.getRidingSessionId() + " not found.")
             );
-            if(signedInUser.getRole() == Role.INSTRUCTOR && request.getUserId() !=null && !session.getInstructor().getUser().getId().equals(signedInUser.getId())){
+            if(authUser.role().equals(Role.INSTRUCTOR.name()) && request.getUserId() !=null && !session.getInstructor().getUserId().equals(authUser.userId())){
                 throw new AccessDeniedException("Instructors can only book clients into their own sessions. ");
             }
             if (session.getSessionStatus() != SessionStatus.AVAILABLE) {
@@ -66,12 +64,12 @@ public class BookingService {
                 throw new InvalidBookingException("This session has already started or finished.");
             }
 
-            if(bookingRepository.existsByUserIdAndRidingSessionIdAndBookingStatusNot(bookedUser.getId(), session.getId(), BookingStatus.CANCELLED)){
+            if(bookingRepository.existsByUserIdAndRidingSessionIdAndBookingStatusNot(userBookedId, session.getId(), BookingStatus.CANCELLED)){
                 throw new InformationExistException("This user already has a booking for this session.");
             }
 
              if(bookingRepository.existsByUserIdAndRidingSessionDateAndRidingSessionStartTimeLessThanAndRidingSessionEndTimeGreaterThanAndBookingStatusIn(
-                bookedUser.getId(), session.getDate(), session.getEndTime(), session.getStartTime(), SEAT_HOLDING_STATUSES)){
+                userBookedId, session.getDate(), session.getEndTime(), session.getStartTime(), SEAT_HOLDING_STATUSES)){
                  throw new InformationExistException("This user already has a booking that overlaps this session.");
              }
 
@@ -81,16 +79,16 @@ public class BookingService {
             }
 
             Booking booking = new Booking();
-            booking.setUser(bookedUser);
+            booking.setUserId(userBookedId);
             booking.setRidingSession(session);
             Booking savedBooking = bookingRepository.save(booking);
             if (takenSpots + 1 >= session.getCapacity()) {
                 session.setSessionStatus(SessionStatus.FULL);
             }
         log.info("User {} created booking {} for session {} (booked user {})",
-                signedInUser.getId(), savedBooking.getId(), session.getId(), bookedUser.getId());
+               authUser.userId(), savedBooking.getId(), session.getId(), userBookedId);
 
-//            notificationService.createAndSend(bookedUser,  "Your booking for " + session.getDate() + " was created and is pending confirmation.", NotificationType.BOOKING_CREATED);
+            //ToDo: publish BOOKING_CREATED event
             return bookingMapper.toResponse(savedBooking);
 
     }
@@ -99,20 +97,21 @@ public class BookingService {
      * Returns bookings as response DTOs, optionally filtered by status.
      * Clients get only their own bookings; instructors and admins get all of them.
      *
-     * @param email the email of the signed-in user, taken from the JWT.
+     * @param authUser the signed-in user (id, email, role), taken from the JWT.
      * @param status the booking status to filter by, or null for all statuses.
      * @return the list of bookings, empty if there are none.
      * @throws InformationNotFoundException if the signed-in user does not exist.
      */
     @Transactional(readOnly = true)
-    public List<BookingResponse> getAllBookings(String email, BookingStatus status) {
-        User signedInUser = findUserByEmail(email);
-        List<Booking> bookings;
-        if(signedInUser.getRole() == Role.CLIENT){
+    public List<BookingResponse> getAllBookings(AuthUser authUser, BookingStatus status) {
+
+       List<Booking> bookings = new ArrayList<>();
+
+        if(authUser.role().equals(Role.CLIENT.name())){
             if(status != null){
-                bookings = bookingRepository.findByUserIdAndBookingStatus(signedInUser.getId(), status);
+                bookings = bookingRepository.findByUserIdAndBookingStatus(authUser.userId(), status);
             } else{
-                bookings = bookingRepository.findByUserId(signedInUser.getId());
+                bookings = bookingRepository.findByUserId(authUser.userId());
             }
         } else{
             if(status != null){
@@ -126,17 +125,17 @@ public class BookingService {
 
 
 
-    /**
-     * Finds a user by the email stored in the JWT.
-     *
-     * @param email the user's email.
-     * @return the user.
-     * @throws InformationNotFoundException if no user has this email.
-     */
-    private User findUserByEmail(String email) {
-        return userRepository.findByEmail(email).orElseThrow(
-                () -> new InformationNotFoundException("User with email " + email + " not found."));
-    }
+//    /**
+//     * Finds a user by the email stored in the JWT.
+//     *
+//     * @param email the user's email.
+//     * @return the user.
+//     * @throws InformationNotFoundException if no user has this email.
+//     */
+//    private User findUserByEmail(String email) {
+//        return userRepository.findByEmail(email).orElseThrow(
+//                () -> new InformationNotFoundException("User with email " + email + " not found."));
+//    }
 
 
     /**
@@ -144,15 +143,13 @@ public class BookingService {
      * Clients can only view their own bookings.
      *
      * @param id the booking id.
-     * @param email the email of the signed-in user, taken from the JWT.
      * @return the booking as a response DTO.
      * @throws InformationNotFoundException if the booking or the signed-in user does not exist.
      * @throws AccessDeniedException if a client requests another user's booking.
      */
     @Transactional(readOnly = true)
-    public BookingResponse getBookingById(Long id, String email){
-        User signedInUser = findUserByEmail(email);
-        return bookingMapper.toResponse(findAccessibleBooking(id, signedInUser));
+    public BookingResponse getBookingById(Long id, AuthUser authUser){
+        return bookingMapper.toResponse(findAccessibleBooking(id, authUser));
     }
 
     /**
@@ -161,7 +158,6 @@ public class BookingService {
      * can apply any allowed change.
      *
      * @param id the booking id.
-     * @param email the email of the signed-in user, taken from the JWT.
      * @param request  the new status.
      * @return the updated booking as a response DTO.
      * @throws InformationNotFoundException if the booking or the signed-in user does not exist.
@@ -169,14 +165,13 @@ public class BookingService {
      * @throws InvalidBookingException if the status change is not allowed.
      */
     @Transactional
-    public BookingResponse updateBooking(Long id, String email, UpdateBookingRequest request){
-        User signedInUser = findUserByEmail(email);
-        Booking booking = findAccessibleBooking(id, signedInUser);
-        if(signedInUser.getRole() == Role.CLIENT && request.getBookingStatus() != BookingStatus.CANCELLED){
+    public BookingResponse updateBooking(Long id, AuthUser authUser, UpdateBookingRequest request){
+        Booking booking = findAccessibleBooking(id, authUser);
+        if(authUser.role().equals( Role.CLIENT.name()) && request.getBookingStatus() != BookingStatus.CANCELLED){
             throw new AccessDeniedException("Clients can only cancel their bookings.");
         }
         changeStatus(booking, request.getBookingStatus());
-        log.info("User {} changed booking {} to {}", signedInUser.getId(), booking.getId(), booking.getBookingStatus());
+        log.info("User {} changed booking {} to {}", authUser.userId(), booking.getId(), booking.getBookingStatus());
         return bookingMapper.toResponse(booking);
     }
 
@@ -185,18 +180,16 @@ public class BookingService {
      * and its spot in the session is released.
      *
      * @param id the booking id.
-     * @param email the email of the signed-in user, taken from the JWT.
      * @return the cancelled booking.
      * @throws InformationNotFoundException if the booking or the signed-in user does not exist.
      * @throws AccessDeniedException if a client cancels another user's booking.
      * @throws InvalidBookingException if the booking is already cancelled or completed.
      */
     @Transactional
-    public BookingResponse deleteBooking(Long id, String email){
-        User signedInUser = findUserByEmail(email);
-        Booking booking = findAccessibleBooking(id, signedInUser);
+    public BookingResponse deleteBooking(Long id, AuthUser authUser){
+        Booking booking = findAccessibleBooking(id, authUser);
         changeStatus(booking, BookingStatus.CANCELLED);
-        log.info("User {} cancelled booking {}", signedInUser.getId(), booking.getId());
+        log.info("User {} cancelled booking {}", authUser.userId(), booking.getId());
         return bookingMapper.toResponse(booking);
     }
 
@@ -204,16 +197,16 @@ public class BookingService {
      * Finds a booking and checks that the signed-in user is allowed to access it.
      *
      * @param id the booking id.
-     * @param signedInUser the user making the request.
+     * @param authUser the user making the request.
      * @return the booking.
      * @throws InformationNotFoundException if no booking has this id.
      * @throws AccessDeniedException if a client asks for another user's booking.
      */
-    private Booking findAccessibleBooking(Long id, User signedInUser) {
+    private Booking findAccessibleBooking(Long id,AuthUser authUser) {
         Booking booking = bookingRepository.findById(id).orElseThrow(
                 () -> new InformationNotFoundException("Booking with id " + id + " not found."));
-        boolean isBookingOwner = booking.getUser().getId().equals(signedInUser.getId());
-        boolean isSessionInstructor = booking.getRidingSession().getInstructor().getUser().getId().equals(signedInUser.getId());
+        boolean isBookingOwner = booking.getUserId().equals(authUser.userId());
+        boolean isSessionInstructor = booking.getRidingSession().getInstructor().getUserId().equals(authUser.userId());
         if (!isBookingOwner && !isSessionInstructor) {
             throw new AccessDeniedException("You can only access your own bookings.");
         }
@@ -247,14 +240,10 @@ public class BookingService {
             }
         }
         if (newStatus == BookingStatus.CONFIRMED) {
-            notificationService.createAndSend(booking.getUser(),
-                    "Your booking for " + booking.getRidingSession().getDate() + " was confirmed.",
-                    NotificationType.BOOKING_CONFIRMED);
+            //todo: send notification if the booking is confirmed
         }
         if (newStatus == BookingStatus.CANCELLED) {
-            notificationService.createAndSend(booking.getUser(),
-                    "Your booking for " + booking.getRidingSession().getDate() + " was cancelled.",
-                    NotificationType.BOOKING_CANCELLED);
+            //todo: send notification if the booking is cancelled
         }
     }
 }

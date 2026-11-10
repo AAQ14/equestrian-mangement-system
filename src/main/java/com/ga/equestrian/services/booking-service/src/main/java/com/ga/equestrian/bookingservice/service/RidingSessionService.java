@@ -1,4 +1,4 @@
-package com.ga.equestrian.bookingservice.serivce;
+package com.ga.equestrian.bookingservice.service;
 
 import com.ga.equestrian.bookingservice.dto.request.*;
 import com.ga.equestrian.bookingservice.dto.response.*;

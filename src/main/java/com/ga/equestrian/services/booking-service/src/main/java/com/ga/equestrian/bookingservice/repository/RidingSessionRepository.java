@@ -1,8 +1,8 @@
 package com.ga.equestrian.bookingservice.repository;
 
-import com.ga.equestrian.model.entity.RidingSession;
-import com.ga.equestrian.model.enums.SessionStatus;
-import com.ga.equestrian.model.enums.SkillLevel;
+import com.ga.equestrian.bookingservice.model.entity.RidingSession;
+import com.ga.equestrian.bookingservice.model.enums.SessionStatus;
+import com.ga.equestrian.bookingservice.model.enums.SkillLevel;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;

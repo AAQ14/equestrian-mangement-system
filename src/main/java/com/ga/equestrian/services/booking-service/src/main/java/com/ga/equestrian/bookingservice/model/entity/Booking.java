@@ -28,7 +28,7 @@ public class Booking {
     private Long id;
 
     @Column(name = "user_id", nullable = false, unique = true)
-    private long userId;
+    private Long userId;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)

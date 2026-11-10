@@ -1,15 +1,16 @@
 package com.ga.equestrian.bookingservice.controller;
 
-import com.ga.equestrian.dto.request.BookingRequest;
-import com.ga.equestrian.dto.request.UpdateBookingRequest;
-import com.ga.equestrian.dto.response.BookingResponse;
-import com.ga.equestrian.model.enums.BookingStatus;
-import com.ga.equestrian.service.BookingService;
+import com.ga.equestrian.bookingservice.dto.request.BookingRequest;
+import com.ga.equestrian.bookingservice.dto.request.UpdateBookingRequest;
+import com.ga.equestrian.bookingservice.dto.response.BookingResponse;
+import com.ga.equestrian.bookingservice.model.enums.BookingStatus;
+import com.ga.equestrian.bookingservice.security.AuthUser;
+import com.ga.equestrian.bookingservice.service.BookingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -26,13 +27,12 @@ public class BookingController {
      * 404 if the user or session does not exist, 409 if the session is full or already booked,
      * and 422 if the session is unavailable or in the past.
      *
-     * @param authentication the signed-in user, set by the JWT filter.
      * @param request the session id and the optional user id.
      * @return the created booking.
      */
-    @PostMapping()
-    public ResponseEntity<BookingResponse> createBooking(Authentication authentication, @Valid @RequestBody BookingRequest request){
-        BookingResponse response = bookingService.createBooking(authentication.getName(), request);
+    @PostMapping
+    public ResponseEntity<BookingResponse> createBooking(@AuthenticationPrincipal AuthUser authUser, @Valid @RequestBody BookingRequest request){
+        BookingResponse response = bookingService.createBooking(authUser, request);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -40,13 +40,12 @@ public class BookingController {
      * Returns bookings. Clients get their own; instructors and admins get all.
      * Returns 200 on success.
      *
-     * @param authentication the signed-in user, set by the JWT filter.
      * @param status the booking status to filter by, or null for all.
      * @return the list of bookings.
      */
-    @GetMapping()
-    public ResponseEntity<List<BookingResponse>> getAllBookings(Authentication authentication, @RequestParam(required = false)BookingStatus status) {
-        List<BookingResponse> bookings = bookingService.getAllBookings(authentication.getName(), status);
+    @GetMapping
+    public ResponseEntity<List<BookingResponse>> getAllBookings(@AuthenticationPrincipal AuthUser authUser, @RequestParam(required = false)BookingStatus status) {
+        List<BookingResponse> bookings = bookingService.getAllBookings(authUser, status);
         return ResponseEntity.status(HttpStatus.OK).body(bookings);
     }
 
@@ -56,12 +55,11 @@ public class BookingController {
      * and 404 if the booking does not exist.
      *
      * @param id the booking id.
-     * @param authentication the signed-in user, set by the JWT filter.
      * @return the booking.
      */
     @GetMapping("/{id}")
-    public ResponseEntity<BookingResponse> getBookingById(@PathVariable Long id, Authentication authentication) {
-        BookingResponse booking = bookingService.getBookingById(id, authentication.getName());
+    public ResponseEntity<BookingResponse> getBookingById(@PathVariable Long id, @AuthenticationPrincipal AuthUser authUser) {
+        BookingResponse booking = bookingService.getBookingById(id, authUser);
         return ResponseEntity.status(HttpStatus.OK).body(booking);
     }
 
@@ -73,13 +71,12 @@ public class BookingController {
      *
      * @param id the booking id.
      * @param request the new status.
-     * @param authentication the signed-in user, set by the JWT filter.
      * @return the updated booking.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<BookingResponse> updateBooking(@PathVariable Long id, @Valid @RequestBody UpdateBookingRequest request, Authentication authentication)
+    public ResponseEntity<BookingResponse> updateBooking(@PathVariable Long id, @Valid @RequestBody UpdateBookingRequest request,@AuthenticationPrincipal AuthUser authUser)
     {
-        BookingResponse booking = bookingService.updateBooking(id, authentication.getName(), request);
+        BookingResponse booking = bookingService.updateBooking(id, authUser, request);
         return ResponseEntity.status(HttpStatus.OK).body(booking);
     }
 
@@ -90,12 +87,11 @@ public class BookingController {
      * 404 if the booking does not exist, and 422 if it is already cancelled or completed.
      *
      * @param id the booking id.
-     * @param authentication the signed-in user, set by the JWT filter.
      * @return the cancelled booking.
      */
     @DeleteMapping("/{id}")
-    public ResponseEntity<BookingResponse> deleteBooking(@PathVariable Long id, Authentication authentication){
-        BookingResponse booking = bookingService.deleteBooking(id, authentication.getName());
+    public ResponseEntity<BookingResponse> deleteBooking(@PathVariable Long id,@AuthenticationPrincipal AuthUser authUser){
+        BookingResponse booking = bookingService.deleteBooking(id, authUser);
         return ResponseEntity.status(HttpStatus.OK).body(booking);
     }
 

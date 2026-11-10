@@ -27,7 +27,7 @@ public class Instructor {
 
 
     @Column(name = "user_id", nullable = false, unique = true)
-    private long userId;
+    private Long userId;
 
     @Column(nullable = false)
     private String firstName;
