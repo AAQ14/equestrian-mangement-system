@@ -2,6 +2,8 @@ package com.ga.equestrian.userservice.controller;
 
 import com.ga.equestrian.userservice.dto.request.UpdateUserRequest;
 import com.ga.equestrian.userservice.dto.response.UserResponse;
+import com.ga.equestrian.userservice.dto.response.UserSummary;
+import com.ga.equestrian.userservice.model.enums.Role;
 import com.ga.equestrian.userservice.model.enums.UserStatus;
 import com.ga.equestrian.userservice.service.UserService;
 import jakarta.validation.Valid;
@@ -46,7 +48,7 @@ public class UserController {
      * @param request the fields to change, sent as form data.
      * @return the updated user.
      */
-    @PutMapping("/{id}")
+    @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, Authentication authentication, @Valid @ModelAttribute UpdateUserRequest request){
         UserResponse response = userService.updateUser(authentication.getName(), id, request);
@@ -111,5 +113,26 @@ public class UserController {
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<UserResponse> activateUser(@PathVariable Long id, Authentication authentication) {
         return ResponseEntity.status(HttpStatus.OK).body(userService.activateUser(authentication.getName(), id));
+    }
+
+    /**
+     * Return the basic details of a user. Called by other services through Feign.
+     *
+     * @param id the id of the user/
+     * @return the user summary.
+     */
+    @GetMapping("/{id}/summary")
+    public ResponseEntity<UserSummary> getUserSummary(@PathVariable Long id){
+       UserSummary user = userService.getUserSummary(id);
+        return ResponseEntity.ok(user);
+    }
+
+
+
+    @PutMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserSummary> updateRole(@PathVariable Long id, @RequestParam Role role){
+        UserSummary userSummary = userService.updateRole(id, role);
+        return ResponseEntity.ok(userSummary);
     }
 }

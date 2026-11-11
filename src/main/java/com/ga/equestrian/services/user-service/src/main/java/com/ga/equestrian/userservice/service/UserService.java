@@ -2,11 +2,14 @@ package com.ga.equestrian.userservice.service;
 
 import com.ga.equestrian.userservice.dto.request.UpdateUserRequest;
 import com.ga.equestrian.userservice.dto.response.UserResponse;
+import com.ga.equestrian.userservice.dto.response.UserSummary;
 import com.ga.equestrian.userservice.exception.InformationNotFoundException;
 import com.ga.equestrian.userservice.exception.InvalidFileException;
 import com.ga.equestrian.userservice.exception.InvalidUserActionException;
 import com.ga.equestrian.userservice.mapper.UserMapper;
+import com.ga.equestrian.userservice.mapper.UserSummaryMapper;
 import com.ga.equestrian.userservice.model.entity.User;
+import com.ga.equestrian.userservice.model.enums.Role;
 import com.ga.equestrian.userservice.model.enums.UserStatus;
 import com.ga.equestrian.userservice.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +26,7 @@ public class UserService {
     private final UserRepository userRepository;
     private final UserMapper userMapper;
     private final FileStorageService fileStorageService;
-
+    private final UserSummaryMapper userSummaryMapper;
     /**
      * Updates the profile of the signed-in user.
      *
@@ -174,5 +177,28 @@ public class UserService {
         user.setUserStatus(UserStatus.ACTIVE);
         log.info("Admin {} reactivated user {}", admin.getId(), user.getId());
         return userMapper.toResponse(user);
+    }
+
+    /**
+     * Returns the basic details of user,used by the other services.
+     *
+     * @param id the id of the user.
+     * @return the user summary.
+     * @throws InformationNotFoundException if no user has this id.
+     */
+    public UserSummary getUserSummary(Long id) {
+        User user = userRepository.findById(id).orElseThrow(
+                ()-> new InformationNotFoundException("User with id " + id + " not found")
+        );
+        return userSummaryMapper.toSummary(user);
+    }
+
+    public UserSummary updateRole(Long id, Role role){
+        User user = userRepository.findById(id).orElseThrow(
+                ()->new InformationNotFoundException("User with id " + id + " not found.")
+        );
+        user.setRole(role);
+        userRepository.save(user);
+        return userSummaryMapper.toSummary(user);
     }
 }

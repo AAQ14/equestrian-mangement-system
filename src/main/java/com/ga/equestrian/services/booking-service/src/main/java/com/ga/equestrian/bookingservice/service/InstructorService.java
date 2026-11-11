@@ -1,15 +1,18 @@
-package com.ga.equestrian.userservice.service;
+package com.ga.equestrian.bookingservice.service;
 
-import com.ga.equestrian.dto.request.InstructorRequest;
-import com.ga.equestrian.dto.response.InstructorResponse;
-import com.ga.equestrian.exception.InformationExistException;
-import com.ga.equestrian.exception.InformationNotFoundException;
-import com.ga.equestrian.mapper.InstructorMapper;
-import com.ga.equestrian.model.entity.Instructor;
-import com.ga.equestrian.model.entity.User;
-import com.ga.equestrian.model.enums.Role;
-import com.ga.equestrian.repository.InstructorRepository;
-import com.ga.equestrian.repository.UserRepository;
+import com.ga.equestrian.bookingservice.client.UserClient;
+import com.ga.equestrian.bookingservice.dto.request.InstructorRequest;
+import com.ga.equestrian.bookingservice.dto.response.InstructorResponse;
+import com.ga.equestrian.bookingservice.dto.response.UserSummary;
+import com.ga.equestrian.bookingservice.exception.InformationExistException;
+import com.ga.equestrian.bookingservice.exception.InformationNotFoundException;
+import com.ga.equestrian.bookingservice.exception.InvalidUserActionException;
+import com.ga.equestrian.bookingservice.mapper.InstructorMapper;
+import com.ga.equestrian.bookingservice.model.entity.Instructor;
+import com.ga.equestrian.bookingservice.model.enums.Role;
+import com.ga.equestrian.bookingservice.model.enums.UserStatus;
+import com.ga.equestrian.bookingservice.repository.InstructorRepository;
+import com.ga.equestrian.bookingservice.security.AuthUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,7 +23,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class InstructorService {
     private final InstructorRepository instructorRepository;
-    private final UserRepository userRepository;
+    private final UserClient userClient;
     private final InstructorMapper instructorMapper;
 
     /**
@@ -34,25 +37,33 @@ public class InstructorService {
      */
     @Transactional
     public InstructorResponse addInstructor(InstructorRequest request) {
-        User user = userRepository.findById(request.getUserId()).orElseThrow(
-                () -> new InformationNotFoundException("User with id " + request.getUserId() + " not found."));
+        UserSummary user = userClient.getUser(request.getUserId());
 
-        if (instructorRepository.existsByUserId(user.getId())) {
+        if (instructorRepository.existsByUserId(user.id())) {
             throw new InformationExistException(
-                    "User with id " + user.getId() + " already has an instructor profile.");
+                    "User with id " + user.id() + " already has an instructor profile.");
         }
 
-        if (user.getRole() == Role.CLIENT) {
-            user.setRole(Role.INSTRUCTOR);
+        if(user.userStatus()!= UserStatus.ACTIVE){
+            throw new InvalidUserActionException("Only active users can become instructors.");
+        }
+
+        if (user.role() == Role.CLIENT) {
+          userClient.updateUser(user.id(), Role.INSTRUCTOR.name());
         }
 
         Instructor instructor = new Instructor();
-        instructor.setUser(user);
+        instructor.setUserId(user.id());
+        instructor.setFirstName(user.firstName());
+        instructor.setLastName(user.lastName());
         instructor.setExperienceYears(request.getExperienceYears());
         instructor.setSkillLevel(request.getSkillLevel());
         instructor.setSpecialization(request.getSpecialization());
 
         Instructor savedInstructor = instructorRepository.save(instructor);
+/*        if(user.role() == Role.CLIENT){
+            userClient.updateRole(Role.INSTRUCTOR);
+        }*/
         return instructorMapper.toResponse(savedInstructor);
     }
 
@@ -127,11 +138,9 @@ public class InstructorService {
         Instructor instructor = instructorRepository.findById(id).orElseThrow(
                 () -> new InformationNotFoundException("Instructor with id " + id + " not found.")
         );
-        User user = instructor.getUser();
-        if (user.getRole() == Role.INSTRUCTOR) {
-            user.setRole(Role.CLIENT);
-        }
         instructorRepository.delete(instructor);
+        instructorRepository.flush();// DELETE runs now; if it fails, we stop here.
+        userClient.updateUser(instructor.getUserId(), Role.CLIENT.name());// Only runs if the delete worked.
         return instructorMapper.toResponse(instructor);
     }
 

@@ -100,9 +100,7 @@ public class AuthController {
      */
     @PostMapping("/users/login")
     public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request){
-        System.out.println(request.getEmail()+ request.getPassword());
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
-        System.out.println(encoder.encode(request.getPassword()));
         LoginResponse loginResponse = authService.login(request.getEmail(), request.getPassword());
         return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
     }

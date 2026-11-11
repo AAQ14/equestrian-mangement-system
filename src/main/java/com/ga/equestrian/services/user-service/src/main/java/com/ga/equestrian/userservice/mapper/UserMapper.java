@@ -1,6 +1,7 @@
 package com.ga.equestrian.userservice.mapper;
 
 import com.ga.equestrian.userservice.dto.response.UserResponse;
+import com.ga.equestrian.userservice.dto.response.UserSummary;
 import com.ga.equestrian.userservice.model.entity.User;
 import org.springframework.stereotype.Component;
 
@@ -18,4 +19,5 @@ public class UserMapper {
     public UserResponse toResponse(User user){
         return new UserResponse(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getPhone(), user.getProfilePicture(), user.getRole(), user.getUserStatus(), user.getCreatedAt(), user.getUpdatedAt());
     }
+
 }
