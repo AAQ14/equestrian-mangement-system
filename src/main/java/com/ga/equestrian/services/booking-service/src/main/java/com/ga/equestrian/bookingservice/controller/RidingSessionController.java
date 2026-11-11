@@ -1,11 +1,12 @@
 package com.ga.equestrian.bookingservice.controller;
 
-import com.ga.equestrian.dto.request.RidingSessionRequest;
-import com.ga.equestrian.dto.request.UpdateRidingSessionRequest;
-import com.ga.equestrian.dto.response.RidingSessionResponse;
-import com.ga.equestrian.model.enums.SessionStatus;
-import com.ga.equestrian.model.enums.SkillLevel;
-import com.ga.equestrian.service.RidingSessionService;
+import com.ga.equestrian.bookingservice.dto.request.RidingSessionRequest;
+import com.ga.equestrian.bookingservice.dto.request.UpdateRidingSessionRequest;
+import com.ga.equestrian.bookingservice.dto.response.RidingSessionResponse;
+import com.ga.equestrian.bookingservice.model.enums.SessionStatus;
+import com.ga.equestrian.bookingservice.model.enums.SkillLevel;
+import com.ga.equestrian.bookingservice.security.AuthUser;
+import com.ga.equestrian.bookingservice.service.RidingSessionService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -13,6 +14,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -99,14 +101,14 @@ public class RidingSessionController {
      * Returns 200 on success, 403 if the user is not the session's instructor,
      * 404 if the session does not exist, and 422 if the session is already cancelled or completed.
      *
-     * @param authentication the signed-in instructor.
+     * @param authUser the signed-in instructor, token from JWT.
      * @param id the session id.
      * @return the cancelled session.
      */
     @PatchMapping("/{id}/cancel")
     @PreAuthorize("hasRole('INSTRUCTOR')")
-    public ResponseEntity<RidingSessionResponse> deleteSession(Authentication authentication,  @PathVariable Long id) {
-        RidingSessionResponse response = ridingSessionService.cancelSession(authentication.getName(), id);
+    public ResponseEntity<RidingSessionResponse> deleteSession(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long id) {
+        RidingSessionResponse response = ridingSessionService.cancelSession(authUser, id);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
 

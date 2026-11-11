@@ -3,10 +3,13 @@ package com.ga.equestrian.bookingservice.service;
 import com.ga.equestrian.bookingservice.dto.request.*;
 import com.ga.equestrian.bookingservice.dto.response.*;
 import com.ga.equestrian.bookingservice.exception.InformationNotFoundException;
+import com.ga.equestrian.bookingservice.exception.InvalidSessionException;
 import com.ga.equestrian.bookingservice.mapper.RidingSessionMapper;
-import com.ga.equestrian.bookingservice.model.entity.Booking;
-import com.ga.equestrian.bookingservice.model.enums.BookingStatus;
+import com.ga.equestrian.bookingservice.model.entity.*;
+import com.ga.equestrian.bookingservice.model.enums.*;
 import com.ga.equestrian.bookingservice.repository.BookingRepository;
+import com.ga.equestrian.bookingservice.repository.*;
+import com.ga.equestrian.bookingservice.security.AuthUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
@@ -24,7 +27,6 @@ public class RidingSessionService {
     private final InstructorRepository instructorRepository;
     private final RidingSessionMapper ridingSessionMapper;
     private final BookingRepository bookingRepository;
-    private final NotificationService notificationService;
     private final HorseAssignmentRepository horseAssignmentRepository;
 
 
@@ -141,19 +143,22 @@ public class RidingSessionService {
             ridingSession.setCapacity(request.getCapacity());
         }
         ridingSessionRepository.save(ridingSession);
-        notificationService.createAndSend(ridingSession.getInstructor().getUser(),
-                "Your session on " + ridingSession.getDate() + " was updated.",
-                NotificationType.SESSION_UPDATED);
+        //ToDo: publish notification event
+        /*
+         * notificationService.createAndSend(ridingSession.getInstructor().getUser(),
+         *                 "Your session on " + ridingSession.getDate() + " was updated.",
+         *                 NotificationType.SESSION_UPDATED);
+         */
         return ridingSessionMapper.toResponse(ridingSession);
     }
 
     /**
      * Cancels a riding session. Only the session's instructor can cancel it.
-     * The session is kept with the CANCELLED status, its pending and confirmed bookings are cancelled,
+     * The session is kept with the CANCELLED status, it's pending and confirmed bookings are cancelled,
      * their horse assignments are removed so the horses are free again,
      * and every booked user is notified on the thread pool.
      *
-     * @param email the email of the signed-in instructor.
+     * @param authUser the signed-in user, taken from the JWT.
      * @param id the session id.
      * @return the cancelled session.
      * @throws InformationNotFoundException if no session has the id.
@@ -161,13 +166,13 @@ public class RidingSessionService {
      * @throws InvalidSessionException if the session is already cancelled or completed.
      */
     @Transactional
-    public RidingSessionResponse cancelSession(String email, Long id) {
+    public RidingSessionResponse cancelSession(AuthUser authUser, Long id) {
 
         RidingSession session = ridingSessionRepository.findById(id).orElseThrow(
                 () -> new InformationNotFoundException("Riding session with id " + id + " not found.")
         );
 
-        boolean isInstructorSession = session.getInstructor().getUser().getEmail().equals(email);
+        boolean isInstructorSession = session.getInstructor().getUserId().equals(authUser.userId());
         if(!isInstructorSession){
             throw new AccessDeniedException("You can only cancel your own sessions.");
         }
@@ -186,15 +191,22 @@ public class RidingSessionService {
         bookingRepository.saveAll(bookings);
         ridingSessionRepository.save(session);
 
-        for(Booking booking: bookings){
+        //ToDo: publish notification event for each user have booked the same session cancelled.
+        /*
+             for(Booking booking: bookings){
             notificationService.sendInBackground(booking.getUser().getId(),
-                    "Your booking for " + session.getDate() + " was cancelled because the session was cancelled."
-                    , NotificationType.SESSION_CANCELLED);
-        }
+                                  * "Your booking for " + session.getDate() + " was cancelled because the session was cancelled."
+                                  *, NotificationType.SESSION_CANCELLED);
 
-        notificationService.sendInBackground(session.getInstructor().getUser().getId(),
+        }
+         */
+
+        //ToDo: publish an event for the instructor who cancelled the session
+        /*
+            notificationService.sendInBackground(session.getInstructor().getUser().getId(),
                 "Your session on " + session.getDate() + " was cancelled, and " + bookings.size() + " bookings were cancelled"
                 , NotificationType.SESSION_CANCELLED);
+         */
 
         log.info("Session {} cancelled, {} bookings cancelled, thread={}",
                 id, bookings.size(), Thread.currentThread().getName());
