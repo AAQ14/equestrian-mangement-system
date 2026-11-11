@@ -1,8 +1,8 @@
 package com.ga.equestrian.bookingservice.model.entity;
 
-import com.ga.equestrian.model.enums.Gender;
-import com.ga.equestrian.model.enums.HorseStatus;
-import com.ga.equestrian.model.enums.SkillLevel;
+import com.ga.equestrian.bookingservice.model.enums.Gender;
+import com.ga.equestrian.bookingservice.model.enums.HorseStatus;
+import com.ga.equestrian.bookingservice.model.enums.SkillLevel;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;

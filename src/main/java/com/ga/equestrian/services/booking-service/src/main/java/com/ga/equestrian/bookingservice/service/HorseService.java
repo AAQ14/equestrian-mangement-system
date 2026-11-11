@@ -1,11 +1,11 @@
 package com.ga.equestrian.bookingservice.service;
 
-import com.ga.equestrian.dto.request.HorseRequest;
-import com.ga.equestrian.dto.request.UpdateHorseRequest;
-import com.ga.equestrian.dto.response.HorseResponse;
-import com.ga.equestrian.exception.InformationNotFoundException;
-import com.ga.equestrian.model.entity.Horse;
-import com.ga.equestrian.repository.HorseRepository;
+import com.ga.equestrian.bookingservice.dto.request.HorseRequest;
+import com.ga.equestrian.bookingservice.dto.request.UpdateHorseRequest;
+import com.ga.equestrian.bookingservice.dto.response.HorseResponse;
+import com.ga.equestrian.bookingservice.exception.InformationNotFoundException;
+import com.ga.equestrian.bookingservice.model.entity.Horse;
+import com.ga.equestrian.bookingservice.repository.HorseRepository;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -34,7 +34,7 @@ public class HorseService {
         newHorse.setSkillLevel(horseRequest.getSkillLevel());
 
         if(horseRequest.getImage()!=null){
-            String filename = fileStorageService.uploadFile(horseRequest.getImage(),  fileStorageService.HORSES_FOLDER);
+            String filename = fileStorageService.uploadFile(horseRequest.getImage(),  FileStorageService.HORSES_FOLDER);
             newHorse.setImage(filename);
         }
         return horseRepository.save(newHorse);
@@ -85,7 +85,7 @@ public class HorseService {
                 ()-> new InformationNotFoundException("Horse with this " + id + " is not found.")
         );
         if(deletedHorse.getImage()!=null){
-            fileStorageService.deleteImage(deletedHorse.getImage(),fileStorageService.HORSES_FOLDER );
+            fileStorageService.deleteImage(deletedHorse.getImage(),FileStorageService.HORSES_FOLDER );
         }
         horseRepository.delete(deletedHorse);
         return deletedHorse;

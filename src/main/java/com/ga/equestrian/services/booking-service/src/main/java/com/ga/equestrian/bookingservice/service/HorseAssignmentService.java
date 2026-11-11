@@ -1,13 +1,21 @@
 package com.ga.equestrian.bookingservice.service;
-import com.ga.equestrian.dto.request.HorseAssignmentRequest;
-import com.ga.equestrian.dto.request.HorseAssignmentUpdateRequest;
-import com.ga.equestrian.exception.InformationExistException;
-import com.ga.equestrian.exception.InformationNotFoundException;
-import com.ga.equestrian.exception.InvalidBookingException;
-import com.ga.equestrian.repository.BookingRepository;
-import com.ga.equestrian.repository.HorseAssignmentRepository;
-import com.ga.equestrian.repository.HorseRepository;
-import com.ga.equestrian.repository.UserRepository;
+import com.ga.equestrian.bookingservice.dto.request.HorseAssignmentRequest;
+import com.ga.equestrian.bookingservice.dto.request.HorseAssignmentUpdateRequest;
+import com.ga.equestrian.bookingservice.exception.InformationExistException;
+import com.ga.equestrian.bookingservice.exception.InformationNotFoundException;
+import com.ga.equestrian.bookingservice.exception.InvalidBookingException;
+import com.ga.equestrian.bookingservice.model.entity.Booking;
+import com.ga.equestrian.bookingservice.model.entity.Horse;
+import com.ga.equestrian.bookingservice.model.entity.HorseAssignment;
+import com.ga.equestrian.bookingservice.model.entity.RidingSession;
+import com.ga.equestrian.bookingservice.model.enums.AssignmentStatus;
+import com.ga.equestrian.bookingservice.model.enums.BookingStatus;
+import com.ga.equestrian.bookingservice.model.enums.HorseStatus;
+import com.ga.equestrian.bookingservice.model.enums.SessionStatus;
+import com.ga.equestrian.bookingservice.repository.BookingRepository;
+import com.ga.equestrian.bookingservice.repository.HorseAssignmentRepository;
+import com.ga.equestrian.bookingservice.repository.HorseRepository;
+import com.ga.equestrian.bookingservice.security.AuthUser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
@@ -30,22 +38,19 @@ public class HorseAssignmentService {
     private final BookingRepository bookingRepository;
     private final HorseRepository horseRepository;
     private final HorseAssignmentRepository horseAssignmentRepository;
-    private final UserRepository userRepository;
     private final ConcurrentHashMap<Long, ReentrantLock> assignsLock = new ConcurrentHashMap<>();
     private final TransactionTemplate transactionTemplate;
-    private final AuditLogService auditLogService;
-    private final NotificationService notificationService;
 
     /**
      * Assigns a horse to a booking. A lock on the horse makes sure only one thread at a time
      * can assign it, and the lock is released only after the transaction has committed.
      *
-     * @param email the email of the signed-in user.
+     * @param authUser the signed-in user, taken from the JWT.
      * @param bookingId the id of the booking.
      * @param horseAssignmentRequest the request holding the id of the horse.
      * @return the created assignment.
      */
-    public HorseAssignment assignHorse(String email, Long bookingId, HorseAssignmentRequest horseAssignmentRequest){
+    public HorseAssignment assignHorse(AuthUser authUser, Long bookingId, HorseAssignmentRequest horseAssignmentRequest){
         Long horseId = horseAssignmentRequest.getHorseId();
         ReentrantLock lock = assignsLock.computeIfAbsent(horseId, id ->new ReentrantLock());
 
@@ -55,7 +60,7 @@ public class HorseAssignmentService {
         lock.lock();
         try{
             log.info("Thread [{}] holds the lock of horse {}", Thread.currentThread().getName(), horseId);
-            assignment =  transactionTemplate.execute(status -> assignHorseProcess(email, bookingId, horseAssignmentRequest));
+            assignment =  transactionTemplate.execute(status -> assignHorseProcess(authUser, bookingId, horseAssignmentRequest));
             Thread.sleep(4000);
         } catch (InterruptedException ex)
         {
@@ -72,7 +77,7 @@ public class HorseAssignmentService {
      * The horse row is locked in the database, and the horse must not be assigned to another session
      * that overlaps in time.
      *
-     * @param email the email of the signed-in user.
+     * @param authUser the signed-in user, taken from the JWT.
      * @param bookingId the id of the booking.
      * @param horseAssignmentRequest the request holding the id of the horse.
      * @return the created assignment.
@@ -81,7 +86,7 @@ public class HorseAssignmentService {
      * @throws InvalidBookingException if the booking or session is not active, or the horse is not available.
      * @throws InformationExistException if the booking already has a horse, or the horse is busy at that time.
      */
-    private HorseAssignment assignHorseProcess(String email, Long bookingId,HorseAssignmentRequest horseAssignmentRequest){
+    private HorseAssignment assignHorseProcess(AuthUser authUser, Long bookingId, HorseAssignmentRequest horseAssignmentRequest){
         Booking booking = bookingRepository.findById(bookingId).orElseThrow(
                 ()-> new InformationNotFoundException("Booking with this id " + bookingId + " not found")
         );
@@ -106,12 +111,11 @@ public class HorseAssignmentService {
             throw new InvalidBookingException("A horse cannot be assigned to cancelled or completed session.");
         }
 
-        boolean isBookingOwner = booking.getUser().getEmail().equals(email);
-        boolean isInstructor = ridingSession.getInstructor().getUser().getEmail().equals(email);
-
-        log.warn("Horse assignment denied: booking={}, thread={}", bookingId, Thread.currentThread().getName());
+        boolean isBookingOwner = booking.getUserId().equals(authUser.userId());
+        boolean isInstructor = ridingSession.getInstructor().getUserId().equals(authUser.userId());
 
         if (!isBookingOwner && !isInstructor) {
+            log.warn("Horse assignment denied: booking={}, thread={}", bookingId, Thread.currentThread().getName());
             throw new AccessDeniedException("You can only cancel the horse of your own booking or your own session.");
         }
 
@@ -137,36 +141,33 @@ public class HorseAssignmentService {
         assignment.setBooking(booking);
         assignment.setHorse(horse);
         assignment.setRidingSession(ridingSession);
-        log.info("Horse assignment succeeded: booking={}, horse={}, session={}, thread={}", bookingId, horseId, ridingSession.getId(), Thread.currentThread().getName());
         HorseAssignment saved = horseAssignmentRepository.save(assignment);
         log.info("Horse assignment succeeded: booking={}, horse={}, session={}, thread={}",
                 bookingId, horseId, ridingSession.getId(), Thread.currentThread().getName());
 
-        auditLogService.record(email, AuditAction.ASSIGN_HORSE, "HorseAssignment", saved.getId(),
-                "Horse " + horseId + " assigned to booking " + bookingId);
+        //ToDo: audit log
+        /* auditLogService.record(email, AuditAction.ASSIGN_HORSE, "HorseAssignment", saved.getId(),
+                "Horse " + horseId + " assigned to booking " + bookingId); */
 
         String message = isBookingOwner
                 ? "A horse was assigned to your booking for " + ridingSession.getDate() + " successfully."
                 : "The instructor assigned a horse to your booking for " + ridingSession.getDate() + ".";
 
-        notificationService.sendInBackground(booking.getUser().getId(), message, NotificationType.HORSE_ASSIGNED);
+        //ToDo: notification event publish
+        //notificationService.sendInBackground(booking.getUser().getId(), message, NotificationType.HORSE_ASSIGNED);
         return saved;
     }
 
     /**
      * Gets the horse assignments of the signed-in user's bookings.
      *
-     * @param email the email of the signed-in user.
+     * @param authUser the signed-in user, taken from the JWT.
      * @return the user's assignments, empty if there are none.
      * @throws InformationNotFoundException if the user does not exist.
      */
     @Transactional(readOnly = true)
-    public List<HorseAssignment> getHorseAssignments(String email){
-        User user = userRepository.findByEmail(email).orElseThrow(
-                ()->new InformationNotFoundException("User with this email " + email + " not found")
-        );
-
-        List<HorseAssignment> assignments = horseAssignmentRepository.findAllByBookingUserId(user.getId());
+    public List<HorseAssignment> getHorseAssignments(AuthUser authUser){
+        List<HorseAssignment> assignments = horseAssignmentRepository.findAllByBookingUserId(authUser.userId());
         return assignments;
     }
 
@@ -174,12 +175,12 @@ public class HorseAssignmentService {
      * Changes the horse of a booking. A lock on the new horse makes sure only one thread at a time
      * can take that horse, and the lock is released only after the transaction has committed.
      *
-     * @param email the email of the signed-in user.
+     * @param authUser the signed-in user, taken from the JWT.
      * @param bookingId the id of the booking.
      * @param horseAssignmentUpdateRequest the request holding the id of the new horse.
      * @return the updated assignment.
      */
-    public HorseAssignment updateHorseAssignment(String email, Long bookingId, HorseAssignmentUpdateRequest horseAssignmentUpdateRequest){
+    public HorseAssignment updateHorseAssignment(AuthUser authUser, Long bookingId, HorseAssignmentUpdateRequest horseAssignmentUpdateRequest){
         Long horseId = horseAssignmentUpdateRequest.getHorseId();
         ReentrantLock lock = assignsLock.computeIfAbsent(horseId, id ->new ReentrantLock());
 
@@ -188,7 +189,7 @@ public class HorseAssignmentService {
         lock.lock();
         try{
             log.info("Thread [{}] holds the lock of horse {}", Thread.currentThread().getName(), horseId);
-            assignment = transactionTemplate.execute(status -> updateHorseAssignmentProcess(email, bookingId, horseAssignmentUpdateRequest));
+            assignment = transactionTemplate.execute(status -> updateHorseAssignmentProcess(authUser, bookingId, horseAssignmentUpdateRequest));
             Thread.sleep(4000);
         } catch (InterruptedException ex) {
             throw new RuntimeException(ex);
@@ -202,7 +203,7 @@ public class HorseAssignmentService {
     /**
      * Moves a booking's assignment to a different horse inside a database transaction.
      *
-     * @param email the email of the signed-in user.
+     * @param authUser the signed-in user, taken from the JWT.
      * @param bookingId the id of the booking.
      * @param horseAssignmentUpdateRequest the request holding the id of the new horse.
      * @return the updated assignment.
@@ -211,7 +212,7 @@ public class HorseAssignmentService {
      * @throws InvalidBookingException if the booking or session is not active, or the horse is not available.
      * @throws InformationExistException if it is already the booking's horse, or the new horse is busy at that time.
      */
-    private HorseAssignment updateHorseAssignmentProcess(String email, Long bookingId, HorseAssignmentUpdateRequest horseAssignmentUpdateRequest) {
+    private HorseAssignment updateHorseAssignmentProcess(AuthUser authUser, Long bookingId, HorseAssignmentUpdateRequest horseAssignmentUpdateRequest) {
         Long horseId = horseAssignmentUpdateRequest.getHorseId();
         log.info("Horse change started: booking={}, newHorse={}, thread={}",
                 bookingId, horseId, Thread.currentThread().getName());
@@ -225,8 +226,8 @@ public class HorseAssignmentService {
 
         RidingSession ridingSession = booking.getRidingSession();
 
-        boolean isBookingOwner = horseAssignment.getBooking().getUser().getEmail().equals(email);
-        boolean isInstructor = ridingSession.getInstructor().getUser().getEmail().equals(email);
+        boolean isBookingOwner = horseAssignment.getBooking().getUserId().equals(authUser.userId());
+        boolean isInstructor = ridingSession.getInstructor().getUserId().equals(authUser.userId());
 
         if (!isBookingOwner && !isInstructor) {
             throw new AccessDeniedException("You can only update the horse of your own booking or your own session.");
@@ -269,34 +270,37 @@ public class HorseAssignmentService {
         HorseAssignment saved = horseAssignmentRepository.save(horseAssignment);
         log.info("Horse change succeeded: booking={}, oldHorse={}, newHorse={}, thread={}",
                 bookingId, oldHorseId, horseId, Thread.currentThread().getName());
-        auditLogService.record(email, AuditAction.CHANGE_HORSE, "HorseAssignment", saved.getId(),
-                "Booking " + bookingId + " moved from horse " + oldHorseId + " to horse " + horseId);
+
+        //ToDo: add audit log event
+        /* auditLogService.record(email, AuditAction.CHANGE_HORSE, "HorseAssignment", saved.getId(),
+                "Booking " + bookingId + " moved from horse " + oldHorseId + " to horse " + horseId); */
 
         String message = isBookingOwner
                 ? "The horse of your booking for " + ridingSession.getDate() + " was changed successfully."
                 : "The instructor changed the horse of your booking for " + ridingSession.getDate() + ".";
 
-        notificationService.sendInBackground(booking.getUser().getId(), message, NotificationType.HORSE_ASSIGNMENT_UPDATED);
+        //ToDo: publish notification service event.
+        /* notificationService.sendInBackground(booking.getUser().getId(), message, NotificationType.HORSE_ASSIGNMENT_UPDATED);*/
         return saved;
     }
 
     /**
      * Gets the horse assignment of one booking.
      *
-     * @param email the email of the signed-in user.
+     * @param authUser the signed-in user, taken from the JWT.
      * @param bookingId the id of the booking.
      * @return the assignment of the booking.
      * @throws InformationNotFoundException if the booking has no horse assigned.
      * @throws AccessDeniedException if the user is neither the booking's owner nor the session's instructor.
      */
     @Transactional(readOnly = true)
-    public HorseAssignment getHorseAssignmentByBooking(String email, Long bookingId){
+    public HorseAssignment getHorseAssignmentByBooking(AuthUser authUser, Long bookingId){
         HorseAssignment horseAssignment = horseAssignmentRepository.findByBookingId(bookingId).orElseThrow(
                 ()->new InformationNotFoundException("Booking " + bookingId + " has no horse assigned.")
         );
 
-        boolean isBookingOwner = horseAssignment.getBooking().getUser().getEmail().equals(email);
-        boolean isInstructor = horseAssignment.getRidingSession().getInstructor().getUser().getEmail().equals(email);
+        boolean isBookingOwner = horseAssignment.getBooking().getUserId().equals(authUser.userId());
+        boolean isInstructor = horseAssignment.getRidingSession().getInstructor().getUserId().equals(authUser.userId());
         if (!isBookingOwner && !isInstructor) {
             throw new AccessDeniedException("You can only view the horse of your own booking or your own session.");
         }
@@ -307,14 +311,14 @@ public class HorseAssignmentService {
      * Removes a horse from a booking, so the horse is free again at this time.
      * The assignment row is deleted, so the booking can get a new horse later.
      *
-     * @param email the email of the sign-in user.
+     * @param authUser the signed-in user, taken from the JWT.
      * @param bookingId the id of the booking.
      * @throws InformationNotFoundException if the booking has no horse assigned.
      * @throws AccessDeniedException if the user is neither the booking owner nor the session's instructor.
      * @throws InvalidBookingException if the session is already completed or cancelled.
      */
     @Transactional
-    public void cancelHorseAssignment(String email, Long bookingId) {
+    public void cancelHorseAssignment(AuthUser authUser, Long bookingId) {
         HorseAssignment horseAssignment = horseAssignmentRepository.findByBookingId(bookingId).orElseThrow(
                 ()->new InformationNotFoundException("Booking " + bookingId + " has no horse assigned.")
         );
@@ -324,8 +328,8 @@ public class HorseAssignmentService {
 //        );
 
         RidingSession session = horseAssignment.getBooking().getRidingSession();
-        boolean isBookingOwner = horseAssignment.getBooking().getUser().getEmail().equals(email);
-        boolean isInstructor = session.getInstructor().getUser().getEmail().equals(email);
+        boolean isBookingOwner = horseAssignment.getBooking().getUserId().equals(authUser.userId());
+        boolean isInstructor = session.getInstructor().getUserId().equals(authUser.userId());
 
         if (!isBookingOwner && !isInstructor) {
             throw new AccessDeniedException("You can only cancel the horse of your own booking or your own session.");
@@ -343,14 +347,21 @@ public class HorseAssignmentService {
         horseAssignmentRepository.delete(horseAssignment);
         log.info("Horse assignment cancelled: booking={}, horse={}, thread={}",
                 bookingId, horseAssignment.getHorse().getId(), Thread.currentThread().getName());
-        auditLogService.record(email, AuditAction.REMOVE_HORSE, "HorseAssignment", horseAssignment.getId(),
+        //ToDo: audit log publish event
+        /*
+            auditLogService.record(email, AuditAction.REMOVE_HORSE, "HorseAssignment", horseAssignment.getId(),
                 "Horse " + horseId + " removed from booking " + bookingId);
+         */
 
         String message = isBookingOwner
                 ? "The horse of your booking for " + session.getDate() + " was removed successfully."
                 : "The instructor removed the horse of your booking for " + session.getDate() + ".";
 
-        notificationService.sendInBackground(horseAssignment.getBooking().getUser().getId(), message, NotificationType.HORSE_ASSIGNMENT_CANCELLED);
+
+        //ToDo: notification service publish event.
+        /*
+          notificationService.sendInBackground(horseAssignment.getBooking().getUser().getId(), message, NotificationType.HORSE_ASSIGNMENT_CANCELLED);
+         */
 
     }
 }

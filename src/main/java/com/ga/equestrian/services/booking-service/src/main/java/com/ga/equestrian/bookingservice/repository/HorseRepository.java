@@ -1,6 +1,6 @@
 package com.ga.equestrian.bookingservice.repository;
 
-import com.ga.equestrian.model.entity.Horse;
+import com.ga.equestrian.bookingservice.model.entity.Horse;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;

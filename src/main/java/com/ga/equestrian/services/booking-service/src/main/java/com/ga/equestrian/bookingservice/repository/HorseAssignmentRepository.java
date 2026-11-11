@@ -1,7 +1,7 @@
 package com.ga.equestrian.bookingservice.repository;
 
-import com.ga.equestrian.model.entity.HorseAssignment;
-import com.ga.equestrian.model.enums.AssignmentStatus;
+import com.ga.equestrian.bookingservice.model.entity.HorseAssignment;
+import com.ga.equestrian.bookingservice.model.enums.AssignmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.time.LocalDate;

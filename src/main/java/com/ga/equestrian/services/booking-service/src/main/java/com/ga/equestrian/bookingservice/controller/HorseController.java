@@ -1,13 +1,14 @@
 package com.ga.equestrian.bookingservice.controller;
 
-import com.ga.equestrian.dto.request.HorseRequest;
-import com.ga.equestrian.dto.request.UpdateHorseRequest;
-import com.ga.equestrian.dto.response.HorseResponse;
-import com.ga.equestrian.service.HorseService;
+import com.ga.equestrian.bookingservice.dto.request.HorseRequest;
+import com.ga.equestrian.bookingservice.dto.request.UpdateHorseRequest;
+import com.ga.equestrian.bookingservice.dto.response.HorseResponse;
+import com.ga.equestrian.bookingservice.service.HorseService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +26,7 @@ public class HorseController {
      * @param horseRequest the data of the horse to create.
      * @return a success message when the horse is created.
      */
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     @PostMapping("/horses/create")
     public ResponseEntity<String> addHorse(@Valid @ModelAttribute HorseRequest horseRequest){
         horseService.createHorse(horseRequest);
@@ -38,6 +40,7 @@ public class HorseController {
      * @param updateHorseRequest the updated horse data.
      * @return  a success message when the horse is updated.
      */
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     @PutMapping("/horses/update/{id}")
     public ResponseEntity<String> updateHorse(@PathVariable Long id,@Valid @ModelAttribute UpdateHorseRequest updateHorseRequest){
         horseService.updateHorse(id, updateHorseRequest);
@@ -50,6 +53,7 @@ public class HorseController {
      * @param id the ID of the horse to delete.
      * @return a success message when the horse is deleted.
      */
+    @PreAuthorize("hasRole('INSTRUCTOR')")
     @DeleteMapping("/horses/delete/{id}")
     public ResponseEntity<String> deleteHorse(@PathVariable Long id){
         horseService.deleteHorse(id);
@@ -61,6 +65,7 @@ public class HorseController {
      *
      * @return a list of all horses responses.
      */
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/horses/all")
     public ResponseEntity<List<HorseResponse>> getAllHorses() {
         List<HorseResponse> horses = horseService.getAllHorses();
@@ -72,6 +77,7 @@ public class HorseController {
      * @param id the ID of the horse to retrieve.
      * @return the horse response.
      */
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/horses/{id}")
     public ResponseEntity<HorseResponse> getHorse(@PathVariable Long id){
         HorseResponse horse = horseService.getHorse(id);
