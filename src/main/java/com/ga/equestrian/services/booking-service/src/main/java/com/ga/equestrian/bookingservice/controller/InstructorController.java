@@ -1,8 +1,8 @@
 package com.ga.equestrian.bookingservice.controller;
 
-import com.ga.equestrian.dto.request.InstructorRequest;
-import com.ga.equestrian.dto.response.InstructorResponse;
-import com.ga.equestrian.service.InstructorService;
+import com.ga.equestrian.bookingservice.dto.request.InstructorRequest;
+import com.ga.equestrian.bookingservice.dto.response.InstructorResponse;
+import com.ga.equestrian.bookingservice.service.InstructorService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -47,4 +47,5 @@ public class InstructorController {
         InstructorResponse instructor = instructorService.deleteInstructor(id);
         return ResponseEntity.status(HttpStatus.OK).body(instructor);
     }
+
 }

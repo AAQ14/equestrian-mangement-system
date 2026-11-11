@@ -2,11 +2,11 @@ package com.ga.equestrian.bookingservice.service;
 
 import com.ga.equestrian.bookingservice.dto.request.*;
 import com.ga.equestrian.bookingservice.dto.response.*;
-import com.ga.equestrian.exception.InformationNotFoundException;
-import com.ga.equestrian.mapper.RidingSessionMapper;
-import com.ga.equestrian.model.entity.Booking;
-import com.ga.equestrian.model.enums.BookingStatus;
-import com.ga.equestrian.repository.BookingRepository;
+import com.ga.equestrian.bookingservice.exception.InformationNotFoundException;
+import com.ga.equestrian.bookingservice.mapper.RidingSessionMapper;
+import com.ga.equestrian.bookingservice.model.entity.Booking;
+import com.ga.equestrian.bookingservice.model.enums.BookingStatus;
+import com.ga.equestrian.bookingservice.repository.BookingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;

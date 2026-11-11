@@ -2,6 +2,7 @@ package com.ga.equestrian.userservice.service;
 
 import com.ga.equestrian.userservice.dto.request.UpdateUserRequest;
 import com.ga.equestrian.userservice.dto.response.UserResponse;
+import com.ga.equestrian.userservice.dto.response.UserSummary;
 import com.ga.equestrian.userservice.exception.InformationNotFoundException;
 import com.ga.equestrian.userservice.exception.InvalidFileException;
 import com.ga.equestrian.userservice.exception.InvalidUserActionException;
@@ -174,5 +175,19 @@ public class UserService {
         user.setUserStatus(UserStatus.ACTIVE);
         log.info("Admin {} reactivated user {}", admin.getId(), user.getId());
         return userMapper.toResponse(user);
+    }
+
+    /**
+     * Returns the basic details of user,used by the other services.
+     *
+     * @param id the id of the user.
+     * @return the user summary.
+     * @throws InformationNotFoundException if no user has this id.
+     */
+    public UserSummary getUserSummary(Long id) {
+        User user = userRepository.findById(id).orElseThrow(
+                ()-> new InformationNotFoundException("User with id " + id + " not found")
+        );
+        return new UserSummary(user.getId(), user.getFirstName(), user.getLastName(), user.getEmail(), user.getUserStatus(), user.getRole());
     }
 }
