@@ -1,6 +1,6 @@
 package com.ga.equestrian.tournamentservice.exception;
 
-import com.ga.equestrian.tournamentservice.tournamentservice.dto.response.ErrorResponse;
+import com.ga.equestrian.tournamentservice.dto.response.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;

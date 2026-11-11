@@ -23,7 +23,7 @@ import java.time.LocalDateTime;
 @Getter
 @Setter
 @Entity
-@Table(name = "booking-payments")
+@Table(name = "payments")
 public class Payment {
     @Id
     @Column

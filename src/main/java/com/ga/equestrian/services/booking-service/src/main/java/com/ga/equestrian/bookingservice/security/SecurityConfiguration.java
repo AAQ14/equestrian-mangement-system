@@ -1,6 +1,5 @@
 package com.ga.equestrian.bookingservice.security;
 
-import com.ga.equestrian.tournamentservice.security.JwtRequestFilter;
 import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;

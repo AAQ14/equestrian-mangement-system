@@ -10,6 +10,6 @@ public interface UserClient {
     @GetMapping("/api/users/{id}/summary")
     UserSummary getUser(@PathVariable Long id);
 
-    @PatchMapping("/api/users/{id}/role")
+    @PutMapping("/api/users/{id}/role")
     UserSummary updateUser(@PathVariable Long id, @RequestParam("role") String role);
 }

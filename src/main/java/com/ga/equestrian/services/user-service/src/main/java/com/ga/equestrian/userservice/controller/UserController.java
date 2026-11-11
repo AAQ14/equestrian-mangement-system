@@ -3,6 +3,7 @@ package com.ga.equestrian.userservice.controller;
 import com.ga.equestrian.userservice.dto.request.UpdateUserRequest;
 import com.ga.equestrian.userservice.dto.response.UserResponse;
 import com.ga.equestrian.userservice.dto.response.UserSummary;
+import com.ga.equestrian.userservice.model.enums.Role;
 import com.ga.equestrian.userservice.model.enums.UserStatus;
 import com.ga.equestrian.userservice.service.UserService;
 import jakarta.validation.Valid;
@@ -124,5 +125,14 @@ public class UserController {
     public ResponseEntity<UserSummary> getUserSummary(@PathVariable Long id){
        UserSummary user = userService.getUserSummary(id);
         return ResponseEntity.ok(user);
+    }
+
+
+
+    @PutMapping("/{id}/role")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<UserSummary> updateRole(@PathVariable Long id, @RequestParam Role role){
+        UserSummary userSummary = userService.updateRole(id, role);
+        return ResponseEntity.ok(userSummary);
     }
 }

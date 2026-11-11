@@ -1,7 +1,7 @@
 package com.ga.equestrian.bookingservice.model.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.ga.equestrian.model.entity.RidingSession;
+import com.ga.equestrian.bookingservice.model.entity.RidingSession;
 import jakarta.persistence.*;
 import lombok.*;
 import org.hibernate.annotations.CreationTimestamp;
@@ -20,17 +20,15 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "comments",
 uniqueConstraints = @UniqueConstraint(columnNames ={"user_id", "session_id"} ))
-@ToString(exclude = {"user","ridingSession"})
+@ToString(exclude = "ridingSession")
 public class Comment {
     @Id
     @Column
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @JsonIgnore
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
+    @Column(name = "user_id", nullable = false)
+    private Long userId;
 
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
