@@ -120,7 +120,7 @@ public class UserController {
      * @param id the id of the user/
      * @return the user summary.
      */
-    @GetMapping("/{id}")
+    @GetMapping("/{id}/summary")
     public ResponseEntity<UserSummary> getUserSummary(@PathVariable Long id){
        UserSummary user = userService.getUserSummary(id);
         return ResponseEntity.ok(user);

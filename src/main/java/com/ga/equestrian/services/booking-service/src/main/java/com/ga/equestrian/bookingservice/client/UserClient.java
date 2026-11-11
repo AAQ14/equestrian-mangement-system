@@ -7,7 +7,7 @@ import org.springframework.web.bind.annotation.*;
 @FeignClient(name="user-service", url = "${user-service.url}")
 public interface UserClient {
 
-    @GetMapping("/api/users/{id}")
+    @GetMapping("/api/users/{id}/summary")
     UserSummary getUser(@PathVariable Long id);
 
     @PatchMapping("/api/users/{id}/role")

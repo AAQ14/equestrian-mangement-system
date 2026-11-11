@@ -1,7 +1,7 @@
 package com.ga.equestrian.userservice.dto.response;
 
-import com.ga.equestrian.model.enums.Role;
-import com.ga.equestrian.model.enums.UserStatus;
+import com.ga.equestrian.userservice.model.enums.Role;
+import com.ga.equestrian.userservice.model.enums.UserStatus;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 
