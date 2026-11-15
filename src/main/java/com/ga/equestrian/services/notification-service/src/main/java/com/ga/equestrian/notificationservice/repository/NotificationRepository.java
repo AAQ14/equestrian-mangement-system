@@ -1,6 +1,6 @@
 package com.ga.equestrian.notificationservice.repository;
 
-import com.ga.equestrian.model.entity.Notification;
+import com.ga.equestrian.notificationservice.model.entity.Notification;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
