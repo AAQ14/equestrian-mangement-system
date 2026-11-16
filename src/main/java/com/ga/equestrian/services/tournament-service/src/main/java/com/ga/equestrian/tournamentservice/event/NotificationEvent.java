@@ -1,4 +1,4 @@
-package event;
+package com.ga.equestrian.tournamentservice.event;
 
 import com.ga.equestrian.tournamentservice.model.enums.NotificationType;
 
