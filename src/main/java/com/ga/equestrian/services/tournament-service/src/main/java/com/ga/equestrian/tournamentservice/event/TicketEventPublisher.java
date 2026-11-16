@@ -46,13 +46,18 @@ public class TicketEventPublisher {
      *
      */
     private void send(NotificationEvent event){
-        kafkaTemplate.send(TOPIC, String.valueOf(event.userId()), event)
-                .whenComplete((result, ex) -> {
-                    if(ex!=null) {
-                        log.error("Could not publish event {} for user {}", event.type(), event.userId(), ex);
-                    }else{
-                        log.info("Published event {} for user {}", event.type(), event.userId());
-                    }
-                });
+        try {
+            kafkaTemplate.send(TOPIC, String.valueOf(event.userId()), event)
+                    .whenComplete((result, ex) -> {
+                        if (ex != null) {
+                            log.error("Could not publish event {} for user {}", event.type(), event.userId(), ex);
+                        } else {
+                            log.info("Published event {} for user {}", event.type(), event.userId());
+                        }
+                    });
+        } catch (Exception ex) {
+            // The ticket is already saved; a notification problem must not turn it into an error.
+            log.error("Could not publish event {} for user {}", event.type(), event.userId(), ex);
+        }
     }
 }

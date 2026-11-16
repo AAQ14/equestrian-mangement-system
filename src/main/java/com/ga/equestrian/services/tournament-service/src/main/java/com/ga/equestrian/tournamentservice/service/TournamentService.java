@@ -2,6 +2,7 @@ package com.ga.equestrian.tournamentservice.service;
 
 import com.ga.equestrian.tournamentservice.dto.request.TournamentRequest;
 import com.ga.equestrian.tournamentservice.dto.request.UpdateTournamentRequest;
+import com.ga.equestrian.tournamentservice.event.TicketEventPublisher;
 import com.ga.equestrian.tournamentservice.exception.InformationExistException;
 import com.ga.equestrian.tournamentservice.exception.InformationNotFoundException;
 import com.ga.equestrian.tournamentservice.exception.InvalidTournamentException;
@@ -23,6 +24,9 @@ public class TournamentService {
     private final TournamentRepository tournamentRepository;
     private final SeatRepository seatRepository;
     private final TicketRepository ticketRepository;
+    private final TicketEventPublisher ticketEventPublisher;
+
+
 
     /**
      *
@@ -50,9 +54,12 @@ public class TournamentService {
             seats.add(seat);
         }
 
-        // ToDo: publish TOURNAMENT_CREATED event. Notification-service will notify all active clients.
 
         seatRepository.saveAll(seats);
+
+        // ToDo: publish TOURNAMENT_CREATED event. Notification-service will notify all active clients.
+        ticketEventPublisher.publish(null, NotificationType.TOURNAMENT_CREATED,
+                "A new tournament is open: " + tournament.getName() + " on " + tournament.getDate() + ". Choose your seat now!");
         return tournament;
     }
 

@@ -1,6 +1,6 @@
 package com.ga.equestrian.notificationservice.security;
 
-import com.ga.equestrian.tournamentservice.security.JwtRequestFilter;
+import com.ga.equestrian.notificationservice.security.JwtRequestFilter;
 import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
