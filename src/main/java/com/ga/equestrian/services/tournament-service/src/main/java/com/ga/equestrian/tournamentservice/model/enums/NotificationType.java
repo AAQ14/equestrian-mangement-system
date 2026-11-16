@@ -36,5 +36,6 @@ public enum NotificationType {
     HORSE_ASSIGNMENT_CANCELLED,
     /** A new tournament was created, sent to every active client. */
     TOURNAMENT_CREATED,
-
+    /** The seat the user tried to buy or move to was already sold.*/
+    SEAT_CONFLICT
 }

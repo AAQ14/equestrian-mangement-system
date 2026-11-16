@@ -1,6 +1,7 @@
 package com.ga.equestrian.tournamentservice.service;
 
 import com.ga.equestrian.tournamentservice.dto.request.TicketRequest;
+import com.ga.equestrian.tournamentservice.event.TicketEventPublisher;
 import com.ga.equestrian.tournamentservice.exception.*;
 import com.ga.equestrian.tournamentservice.repository.PaymentRepository;
 import com.ga.equestrian.tournamentservice.repository.SeatRepository;
@@ -33,10 +34,17 @@ public class TicketService {
     private final ConcurrentHashMap<Long, ReentrantLock> seatLocks = new ConcurrentHashMap<>();
     private final TransactionTemplate transactionTemplate;
     private final ReentrantLock updateLock = new ReentrantLock();
+    private final TicketEventPublisher ticketEventPublisher;
 
 
     public Ticket buyTicket(Long userId, Long tournamentId, TicketRequest ticketRequest){
         Long seatId = ticketRequest.getSeatId();
+        Tournament tournament = tournamentRepository.findById(tournamentId).orElseThrow(
+                ()-> new InformationNotFoundException("Tournament with this id " + tournamentId + " not found.")
+        );
+        Seat seat = seatRepository.findById(seatId).orElseThrow(
+                ()->  new InformationNotFoundException("Seat with this id " + seatId + " not found.")
+        );
         //one lock per seat: get this seat's lock from the map, or create it the first time someone buys this seat.
         // Buyers of the same seat get the same lock, buyers of other seats get different locks, so they don't wait.
         ReentrantLock lock = seatLocks.computeIfAbsent(seatId, id-> new ReentrantLock());
@@ -54,7 +62,7 @@ public class TicketService {
             Thread.sleep(4000);
         }catch (SeatAlreadySoldException e) {
             log.warn("Ticket purchase conflict: seat={}, thread={}", seatId, Thread.currentThread().getName());
-            //ToDo: publish SEAT_CONFLICT event
+           ticketEventPublisher.publish(userId, NotificationType.SEAT_CONFLICT, e.getMessage() + " Please choose another seat.");
             /**
              *  auditLogService.record(email, AuditAction.SEAT_CONFLICT, "Seat", seatId,
              *                     "Seat " + seatId + " was already sold");
@@ -69,7 +77,7 @@ public class TicketService {
             lock.unlock();
             log.info("Thread [" + Thread.currentThread().getName() + "] released the lock of the seat " + seatId);
         }
-        //ToDo: publish TICKET_PURCHASED event log and notification
+        ticketEventPublisher.publish(userId, NotificationType.TICKET_PURCHASED, "Your ticket for " + tournament.getName() + " , seat " + seat.getSeatNumber()+ ", is confirmed.");
         return ticket;
 
     }
@@ -172,6 +180,8 @@ public class TicketService {
         }
         Ticket cancelled = cancel(ticket);
         //ToDo: publish TICKET_CANCEL event
+        ticketEventPublisher.publish(ticket.getUserId(), NotificationType.TICKET_CANCELLED,
+                "Your ticket for " + ticket.getTournament().getName() + " was cancelled.");
         return cancelled;
     }
 
@@ -193,6 +203,8 @@ public class TicketService {
         );
         Ticket cancelled = cancel(ticket);
         //Todo: publish TICKET_CANCELLED event.
+        ticketEventPublisher.publish(ticket.getUserId(), NotificationType.TICKET_CANCELLED,
+                "Your ticket for " + ticket.getTournament().getName() + " was cancelled.");
         return cancelled;
 
     }
@@ -254,13 +266,19 @@ public class TicketService {
             throw new RuntimeException(ex);
         }
         catch (SeatAlreadySoldException e) {
+            log.warn("Ticket purchase conflict: seat={}, thread={}", ticketRequest.getSeatId(), Thread.currentThread().getName());
             //ToDO: publish SEAT_CONFLICT event.
+            ticketEventPublisher.publish(userId, NotificationType.SEAT_CONFLICT,
+                    e.getMessage() + " Please choose another seat.");
             throw e;
         }finally {
             updateLock.unlock();
             log.info("Thread [{}] released the seat change lock: ticket={}", Thread.currentThread().getName(), id);
         }
        //ToDo: publish TICKET_SEAT_CHANGED event.
+        ticketEventPublisher.publish(userId, NotificationType.TICKET_SEAT_CHANGED,
+                "Your seat for " + updated.getTournament().getName()
+                        + " was changed to seat " + updated.getSeat().getSeatNumber() + ".");
         return updated;
     }
 
