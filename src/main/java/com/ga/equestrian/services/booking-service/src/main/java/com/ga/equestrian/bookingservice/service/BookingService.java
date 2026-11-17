@@ -3,6 +3,8 @@ package com.ga.equestrian.bookingservice.service;
 import com.ga.equestrian.bookingservice.client.UserClient;
 import com.ga.equestrian.bookingservice.dto.request.*;
 import com.ga.equestrian.bookingservice.dto.response.*;
+import com.ga.equestrian.bookingservice.event.AuditEventPublisher;
+import com.ga.equestrian.bookingservice.event.BookingEventPublisher;
 import com.ga.equestrian.bookingservice.exception.*;
 import com.ga.equestrian.bookingservice.mapper.*;
 import com.ga.equestrian.bookingservice.model.enums.*;
@@ -30,6 +32,9 @@ public class BookingService {
     private final RidingSessionRepository ridingSessionRepository;
     private final BookingMapper bookingMapper;
     private final UserClient userClient;
+    private final BookingEventPublisher bookingEventPublisher;
+    private final AuditEventPublisher auditEventPublisher;
+
 
     @Transactional
     public BookingResponse createBooking(AuthUser authUser, BookingRequest request){
@@ -85,10 +90,19 @@ public class BookingService {
             if (takenSpots + 1 >= session.getCapacity()) {
                 session.setSessionStatus(SessionStatus.FULL);
             }
+
+        auditEventPublisher.record(authUser.userId(), AuditAction.CREATE_BOOKING, "Booking", savedBooking.getId(),
+                "Booking " + savedBooking.getId() + " created for user " + userBookedId + " in session " + session.getId());
+
         log.info("User {} created booking {} for session {} (booked user {})",
                authUser.userId(), savedBooking.getId(), session.getId(), userBookedId);
 
-            //ToDo: publish BOOKING_CREATED event
+        bookingEventPublisher.publish(userBookedId, NotificationType.BOOKING_CREATED,
+                "Your booking for " + session.getDate() + " was created and is pending confirmation.");
+
+        // Tell the instructor someone booked their session.
+        bookingEventPublisher.publish(session.getInstructor().getUserId(), NotificationType.BOOKING_CREATED,
+                "A new booking was made for your session on " + session.getDate() + ".");
             return bookingMapper.toResponse(savedBooking);
 
     }
@@ -172,6 +186,8 @@ public class BookingService {
         }
         changeStatus(booking, request.getBookingStatus());
         log.info("User {} changed booking {} to {}", authUser.userId(), booking.getId(), booking.getBookingStatus());
+        auditEventPublisher.record(authUser.userId(), AuditAction.UPDATE_BOOKING, "Booking", booking.getId(),
+                "Booking " + booking.getId() + " changed to " + booking.getBookingStatus());
         return bookingMapper.toResponse(booking);
     }
 
@@ -190,6 +206,8 @@ public class BookingService {
         Booking booking = findAccessibleBooking(id, authUser);
         changeStatus(booking, BookingStatus.CANCELLED);
         log.info("User {} cancelled booking {}", authUser.userId(), booking.getId());
+        auditEventPublisher.record(authUser.userId(), AuditAction.CANCEL_BOOKING, "Booking", booking.getId(),
+                "Booking " + booking.getId() + " cancelled");
         return bookingMapper.toResponse(booking);
     }
 
@@ -240,10 +258,12 @@ public class BookingService {
             }
         }
         if (newStatus == BookingStatus.CONFIRMED) {
-            //todo: send notification if the booking is confirmed
+            bookingEventPublisher.publish(booking.getUserId(), NotificationType.BOOKING_CONFIRMED,
+                    "Your booking for " + booking.getRidingSession().getDate() + " was confirmed.");
         }
         if (newStatus == BookingStatus.CANCELLED) {
-            //todo: send notification if the booking is cancelled
+            bookingEventPublisher.publish(booking.getUserId(), NotificationType.BOOKING_CANCELLED,
+                    "Your booking for " + booking.getRidingSession().getDate() + " was cancelled.");
         }
     }
 }

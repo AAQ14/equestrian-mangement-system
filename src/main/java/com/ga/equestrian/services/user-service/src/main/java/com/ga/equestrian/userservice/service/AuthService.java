@@ -3,9 +3,11 @@ package com.ga.equestrian.userservice.service;
 import com.ga.equestrian.userservice.dto.request.RegisterRequest;
 import com.ga.equestrian.userservice.dto.response.LoginResponse;
 import com.ga.equestrian.userservice.dto.response.UserResponse;
+import com.ga.equestrian.userservice.event.AuditEventPublisher;
 import com.ga.equestrian.userservice.exception.*;
 import com.ga.equestrian.userservice.mapper.UserMapper;
 import com.ga.equestrian.userservice.model.entity.User;
+import com.ga.equestrian.userservice.model.enums.AuditAction;
 import com.ga.equestrian.userservice.model.enums.CodePurpose;
 import com.ga.equestrian.userservice.model.enums.Role;
 import com.ga.equestrian.userservice.model.enums.UserStatus;
@@ -34,6 +36,7 @@ public class AuthService {
     private final UserMapper userMapper;
     private final JWTUtil jwtUtil;
     private final VerificationService verificationService;
+    private final AuditEventPublisher auditEventPublisher;
 
     private final int MAX_LOG_ATTEMPTS = 5;
     private final ConcurrentHashMap<String , AtomicInteger> loginAttempts = new ConcurrentHashMap<>();
@@ -69,6 +72,8 @@ public class AuthService {
         user.setRole(Role.CLIENT);
         User savedUser = userRepository.save(user);
         verificationService.generateAndSend(user, CodePurpose.EMAIL_VERIFICATION);
+        auditEventPublisher.record(savedUser.getId(), AuditAction.REGISTER, "User", savedUser.getId(),
+                "New account registered: " + savedUser.getEmail());
         return userMapper.toResponse(savedUser);
     }
 
@@ -129,6 +134,8 @@ public class AuthService {
         }
 
         loginAttempts.remove(userEmail);
+        auditEventPublisher.record(user.getId(), AuditAction.LOGIN, "User", user.getId(),
+                "Logged in successfully");
         String token =  jwtUtil.generateLoginToken(user.getId(), user.getEmail(), user.getRole());
         return new LoginResponse(
                 user.getFirstName(),

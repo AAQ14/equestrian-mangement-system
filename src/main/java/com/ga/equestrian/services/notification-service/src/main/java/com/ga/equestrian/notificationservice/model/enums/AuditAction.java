@@ -4,14 +4,21 @@ package com.ga.equestrian.notificationservice.model.enums;
  *  The kind of action recorded in the audit log.
  */
 public enum AuditAction {
+    REGISTER,
+    CHANGE_ROLE,
     /** The user logged into the app successfully. */
     LOGIN,
     /** The user failed to log in into the app successfully (e.g. wrong password). */
     LOGIN_FAILED,
+    DEACTIVATE_USER,
+    ACTIVATE_USER,
+    UPDATE_USER,
     /** An instructor created a riding session.*/
     CREATE_RIDING_SESSION,
     /** An instructor updated a riding session. */
     UPDATE_RIDING_SESSION,
+    /** An instructor cancelled a riding session. */
+    CANCEL_RIDING_SESSION,
     /** A client booked a riding session. */
     CREATE_BOOKING,
     /** A client cancelled a riding session. */
@@ -39,5 +46,10 @@ public enum AuditAction {
     /** A client tried to buy a seat that was already sold. */
     SEAT_CONFLICT,
     CHANGE_HORSE,
-    REMOVE_HORSE
+    REMOVE_HORSE,
+    UPDATE_BOOKING,
+    ADD_INSTRUCTOR,
+    REMOVE_INSTRUCTOR,
+    UPDATE_INSTRUCTOR,
+    UPDATE_TICKET
 }

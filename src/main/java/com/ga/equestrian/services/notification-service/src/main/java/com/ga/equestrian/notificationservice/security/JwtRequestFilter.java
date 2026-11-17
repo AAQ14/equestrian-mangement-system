@@ -1,6 +1,8 @@
 package com.ga.equestrian.notificationservice.security;
 
-import com.ga.equestrian.tournamentservice.security.JWTUtil;
+import com.ga.equestrian.
+
+        notificationservice.security.JWTUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -36,8 +36,8 @@ public class TournamentController {
      */
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping
-    public ResponseEntity<TournamentResponse> addTournament(@Valid @RequestBody TournamentRequest tournamentRequest){
-        Tournament tournament = tournamentService.add(tournamentRequest);
+    public ResponseEntity<TournamentResponse> addTournament(@AuthenticationPrincipal AuthUser authUser, @Valid @RequestBody TournamentRequest tournamentRequest){
+        Tournament tournament = tournamentService.add(authUser, tournamentRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(tournamentMapper.toResponse(tournament));
     }
 
@@ -54,8 +54,8 @@ public class TournamentController {
 
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/{id}")
-    public ResponseEntity<TournamentResponse> updateTournament(@PathVariable Long id, @Valid @RequestBody UpdateTournamentRequest updateTournamentRequest){
-            Tournament tournament = tournamentService.updateTournament(id, updateTournamentRequest);
+    public ResponseEntity<TournamentResponse> updateTournament(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long id, @Valid @RequestBody UpdateTournamentRequest updateTournamentRequest){
+            Tournament tournament = tournamentService.updateTournament(authUser, id, updateTournamentRequest);
             return ResponseEntity.status(HttpStatus.OK).body(tournamentMapper.toResponse(tournament));
     }
 

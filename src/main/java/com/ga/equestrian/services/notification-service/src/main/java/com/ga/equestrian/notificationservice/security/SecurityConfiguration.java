@@ -1,11 +1,12 @@
 package com.ga.equestrian.notificationservice.security;
 
-import com.ga.equestrian.tournamentservice.security.JwtRequestFilter;
+import com.ga.equestrian.notificationservice.security.JwtRequestFilter;
 import jakarta.servlet.DispatcherType;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -20,6 +21,7 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity
 @RequiredArgsConstructor
 public class SecurityConfiguration {
     /**
@@ -28,15 +30,6 @@ public class SecurityConfiguration {
     @Autowired
     private JwtRequestFilter jwtRequestFilter;
 
-    /**
-     * Provides the BCrypt encoder used to hash and check passwords.
-     *
-     * @return the password encoder.
-     */
-    @Bean
-    public PasswordEncoder passwordEncoder(){
-        return new BCryptPasswordEncoder();
-    }
 
     /**
      * Defines the security rules: CSRF is disabled and no sessions are kept, since every request carries a JWT.
