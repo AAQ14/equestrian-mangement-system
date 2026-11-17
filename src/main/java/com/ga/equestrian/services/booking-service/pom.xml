@@ -124,6 +124,18 @@
 			<groupId>io.github.openfeign</groupId>
 			<artifactId>feign-okhttp</artifactId>
 		</dependency>
+		<!-- Kafka (Spring Boot 4 starter, NOT plain spring-kafka) -->
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-starter-kafka</artifactId>
+		</dependency>
+
+		<!-- So Kafka's JSON can handle LocalDateTime -->
+		<dependency>
+			<groupId>com.fasterxml.jackson.datatype</groupId>
+			<artifactId>jackson-datatype-jsr310</artifactId>
+			<version>2.21.7</version>
+		</dependency>
     </dependencies>
 	<dependencyManagement>
 		<dependencies>

@@ -89,10 +89,10 @@ public class RidingSessionController {
      * @return the updated session.
      */
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('INSTRUCTOR', 'ADMIN')")
-    public ResponseEntity<RidingSessionResponse> updateSession(@PathVariable Long id,
+    @PreAuthorize("hasRole('INSTRUCTOR')")
+    public ResponseEntity<RidingSessionResponse> updateSession(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long id,
                                                                @Valid @RequestBody UpdateRidingSessionRequest request) {
-        RidingSessionResponse response = ridingSessionService.updateSession(id, request);
+        RidingSessionResponse response = ridingSessionService.updateSession(authUser, id, request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
     /**

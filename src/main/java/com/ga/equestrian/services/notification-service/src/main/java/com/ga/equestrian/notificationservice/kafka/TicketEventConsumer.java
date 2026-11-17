@@ -22,7 +22,7 @@ public class TicketEventConsumer {
     public final NotificationService notificationService;
     private final UserContactRepository userContactRepository;
 
-    @KafkaListener(topics = "ticket-events", groupId = "notification-service")
+    @KafkaListener(topics = {"ticket-events", "booking-events"}, groupId = "notification-service")
     public void handle(NotificationEvent event) {
         if(event.userId() == null) {
             //Broadcast: one notification for each active client.

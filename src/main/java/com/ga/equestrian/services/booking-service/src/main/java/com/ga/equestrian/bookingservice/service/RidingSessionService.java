@@ -2,6 +2,7 @@ package com.ga.equestrian.bookingservice.service;
 
 import com.ga.equestrian.bookingservice.dto.request.*;
 import com.ga.equestrian.bookingservice.dto.response.*;
+import com.ga.equestrian.bookingservice.event.BookingEventPublisher;
 import com.ga.equestrian.bookingservice.exception.InformationNotFoundException;
 import com.ga.equestrian.bookingservice.exception.InvalidSessionException;
 import com.ga.equestrian.bookingservice.mapper.RidingSessionMapper;
@@ -28,7 +29,7 @@ public class RidingSessionService {
     private final RidingSessionMapper ridingSessionMapper;
     private final BookingRepository bookingRepository;
     private final HorseAssignmentRepository horseAssignmentRepository;
-
+    private final BookingEventPublisher bookingEventPublisher;
 
     /**
      * Creates a riding session for an existing instructor.
@@ -108,25 +109,31 @@ public class RidingSessionService {
     /**
      * Updates a riding session's details by id.
      * The instructor can be changed to another existing instructor.
-     * @param id  the session id.
+     * @param authUser the signed-in instructor, taken from the JWT.
      * @param request the new instructor and session details.
      * @return the updated session as a response DTO.
+     * @throws AccessDeniedException if an instructor updates another instructor's session.
      * @throws InformationNotFoundException if the session or the instructor does not exit.
      */
     @Transactional
-    public RidingSessionResponse updateSession(Long id, UpdateRidingSessionRequest request){
+    public RidingSessionResponse updateSession(AuthUser authUser, Long id, UpdateRidingSessionRequest request){
         RidingSession ridingSession = ridingSessionRepository.findById(id).orElseThrow(
                 ()-> new InformationNotFoundException("Riding session with id " + id + " not found.")
         );
+
+        boolean isOwnSession = ridingSession.getInstructor().getUserId().equals(authUser.userId());
+        if (!isOwnSession) {
+            throw new AccessDeniedException("You can only update your own sessions.");
+        }
 
 
         if(request.getDate()!=null){
             ridingSession.setDate(request.getDate());
         }
-        if(request.getInstructorId()!=null){ Instructor instructor = instructorRepository.findById(request.getInstructorId()).orElseThrow(
-                () -> new InformationNotFoundException("Instructor with id " + request.getInstructorId() + " not found."));
-            ridingSession.setInstructor(instructor);
-        }
+//        if(request.getInstructorId()!=null){ Instructor instructor = instructorRepository.findById(request.getInstructorId()).orElseThrow(
+//                () -> new InformationNotFoundException("Instructor with id " + request.getInstructorId() + " not found."));
+//            ridingSession.setInstructor(instructor);
+//        }
         if(request.getStartTime()!=null){
             ridingSession.setStartTime(request.getStartTime());
         }
@@ -142,13 +149,13 @@ public class RidingSessionService {
         if(request.getCapacity()!=null){
             ridingSession.setCapacity(request.getCapacity());
         }
-        ridingSessionRepository.save(ridingSession);
-        //ToDo: publish notification event
-        /*
-         * notificationService.createAndSend(ridingSession.getInstructor().getUser(),
-         *                 "Your session on " + ridingSession.getDate() + " was updated.",
-         *                 NotificationType.SESSION_UPDATED);
-         */
+        ridingSession = ridingSessionRepository.save(ridingSession);
+        List<Booking> activeBookings = bookingRepository.findAllByRidingSessionIdAndBookingStatusIn(
+                id, List.of(BookingStatus.PENDING, BookingStatus.CONFIRMED));
+        for (Booking booking : activeBookings) {
+            bookingEventPublisher.publish(booking.getUserId(), NotificationType.SESSION_UPDATED,
+                    "Your session on " + ridingSession.getDate() + " was updated. Please check the new details.");
+        }
         return ridingSessionMapper.toResponse(ridingSession);
     }
 
@@ -191,22 +198,12 @@ public class RidingSessionService {
         bookingRepository.saveAll(bookings);
         ridingSessionRepository.save(session);
 
-        //ToDo: publish notification event for each user have booked the same session cancelled.
-        /*
-             for(Booking booking: bookings){
-            notificationService.sendInBackground(booking.getUser().getId(),
-                                  * "Your booking for " + session.getDate() + " was cancelled because the session was cancelled."
-                                  *, NotificationType.SESSION_CANCELLED);
-
+        for (Booking booking : bookings) {
+            bookingEventPublisher.publish(booking.getUserId(), NotificationType.SESSION_CANCELLED,
+                    "Your booking for " + session.getDate() + " was cancelled because the session was cancelled.");
         }
-         */
-
-        //ToDo: publish an event for the instructor who cancelled the session
-        /*
-            notificationService.sendInBackground(session.getInstructor().getUser().getId(),
-                "Your session on " + session.getDate() + " was cancelled, and " + bookings.size() + " bookings were cancelled"
-                , NotificationType.SESSION_CANCELLED);
-         */
+        bookingEventPublisher.publish(session.getInstructor().getUserId(), NotificationType.SESSION_CANCELLED,
+                "Your session on " + session.getDate() + " was cancelled, and " + bookings.size() + " bookings were cancelled.");
 
         log.info("Session {} cancelled, {} bookings cancelled, thread={}",
                 id, bookings.size(), Thread.currentThread().getName());

@@ -3,6 +3,7 @@ package com.ga.equestrian.bookingservice.service;
 import com.ga.equestrian.bookingservice.client.UserClient;
 import com.ga.equestrian.bookingservice.dto.request.*;
 import com.ga.equestrian.bookingservice.dto.response.*;
+import com.ga.equestrian.bookingservice.event.BookingEventPublisher;
 import com.ga.equestrian.bookingservice.exception.*;
 import com.ga.equestrian.bookingservice.mapper.*;
 import com.ga.equestrian.bookingservice.model.enums.*;
@@ -30,6 +31,7 @@ public class BookingService {
     private final RidingSessionRepository ridingSessionRepository;
     private final BookingMapper bookingMapper;
     private final UserClient userClient;
+    private final BookingEventPublisher bookingEventPublisher;
 
     @Transactional
     public BookingResponse createBooking(AuthUser authUser, BookingRequest request){
@@ -88,7 +90,12 @@ public class BookingService {
         log.info("User {} created booking {} for session {} (booked user {})",
                authUser.userId(), savedBooking.getId(), session.getId(), userBookedId);
 
-            //ToDo: publish BOOKING_CREATED event
+        bookingEventPublisher.publish(userBookedId, NotificationType.BOOKING_CREATED,
+                "Your booking for " + session.getDate() + " was created and is pending confirmation.");
+
+        // Tell the instructor someone booked their session.
+        bookingEventPublisher.publish(session.getInstructor().getUserId(), NotificationType.BOOKING_CREATED,
+                "A new booking was made for your session on " + session.getDate() + ".");
             return bookingMapper.toResponse(savedBooking);
 
     }
@@ -240,10 +247,12 @@ public class BookingService {
             }
         }
         if (newStatus == BookingStatus.CONFIRMED) {
-            //todo: send notification if the booking is confirmed
+            bookingEventPublisher.publish(booking.getUserId(), NotificationType.BOOKING_CONFIRMED,
+                    "Your booking for " + booking.getRidingSession().getDate() + " was confirmed.");
         }
         if (newStatus == BookingStatus.CANCELLED) {
-            //todo: send notification if the booking is cancelled
+            bookingEventPublisher.publish(booking.getUserId(), NotificationType.BOOKING_CANCELLED,
+                    "Your booking for " + booking.getRidingSession().getDate() + " was cancelled.");
         }
     }
 }
