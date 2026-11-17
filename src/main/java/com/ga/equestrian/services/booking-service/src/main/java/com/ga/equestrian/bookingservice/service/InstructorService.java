@@ -4,11 +4,13 @@ import com.ga.equestrian.bookingservice.client.UserClient;
 import com.ga.equestrian.bookingservice.dto.request.InstructorRequest;
 import com.ga.equestrian.bookingservice.dto.response.InstructorResponse;
 import com.ga.equestrian.bookingservice.dto.response.UserSummary;
+import com.ga.equestrian.bookingservice.event.AuditEventPublisher;
 import com.ga.equestrian.bookingservice.exception.InformationExistException;
 import com.ga.equestrian.bookingservice.exception.InformationNotFoundException;
 import com.ga.equestrian.bookingservice.exception.InvalidUserActionException;
 import com.ga.equestrian.bookingservice.mapper.InstructorMapper;
 import com.ga.equestrian.bookingservice.model.entity.Instructor;
+import com.ga.equestrian.bookingservice.model.enums.AuditAction;
 import com.ga.equestrian.bookingservice.model.enums.Role;
 import com.ga.equestrian.bookingservice.model.enums.UserStatus;
 import com.ga.equestrian.bookingservice.repository.InstructorRepository;
@@ -25,6 +27,8 @@ public class InstructorService {
     private final InstructorRepository instructorRepository;
     private final UserClient userClient;
     private final InstructorMapper instructorMapper;
+    private  final AuditEventPublisher auditEventPublisher;
+    private final AuthUser authUser;
 
     /**
      * Creates an instructor profile for an existing user.
@@ -36,7 +40,7 @@ public class InstructorService {
      * @throws InformationExistException    if the user already has an instructor profile.
      */
     @Transactional
-    public InstructorResponse addInstructor(InstructorRequest request) {
+    public InstructorResponse addInstructor(AuthUser authUser, InstructorRequest request) {
         UserSummary user = userClient.getUser(request.getUserId());
 
         if (instructorRepository.existsByUserId(user.id())) {
@@ -61,9 +65,8 @@ public class InstructorService {
         instructor.setSpecialization(request.getSpecialization());
 
         Instructor savedInstructor = instructorRepository.save(instructor);
-/*        if(user.role() == Role.CLIENT){
-            userClient.updateRole(Role.INSTRUCTOR);
-        }*/
+        auditEventPublisher.record(authUser.userId(), AuditAction.ADD_INSTRUCTOR, "Instructor", savedInstructor.getId(),
+                "User " + user.id() + " became an instructor");
         return instructorMapper.toResponse(savedInstructor);
     }
 
@@ -121,6 +124,8 @@ public class InstructorService {
         instructor.setSkillLevel(request.getSkillLevel());
         instructor.setSpecialization(request.getSpecialization());
         instructorRepository.save(instructor);
+        auditEventPublisher.record(authUser.userId(), AuditAction.UPDATE_INSTRUCTOR, "Instructor", id,
+                "Instructor " + id + " details updated");
         return instructorMapper.toResponse(instructor);
     }
 
@@ -130,17 +135,20 @@ public class InstructorService {
      * The user account is kept, and an instructor goes back to the CLIENT role.
      *
      * @param id the instructor id.
+     * @param authUser the signed-in admin, taken from the JWT.
      * @return the deleted instructor.
      * @throws InformationNotFoundException if no instructor has this id.
      */
     @Transactional
-    public InstructorResponse deleteInstructor(Long id){
+    public InstructorResponse deleteInstructor(AuthUser authUser, Long id){
         Instructor instructor = instructorRepository.findById(id).orElseThrow(
                 () -> new InformationNotFoundException("Instructor with id " + id + " not found.")
         );
         instructorRepository.delete(instructor);
         instructorRepository.flush();// DELETE runs now; if it fails, we stop here.
         userClient.updateUser(instructor.getUserId(), Role.CLIENT.name());// Only runs if the delete worked.
+        auditEventPublisher.record(authUser.userId(), AuditAction.REMOVE_INSTRUCTOR, "Instructor", id,
+                "Instructor " + id + " removed, user " + instructor.getUserId() + " is a client again");
         return instructorMapper.toResponse(instructor);
     }
 

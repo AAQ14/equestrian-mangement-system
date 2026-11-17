@@ -2,6 +2,7 @@ package com.ga.equestrian.tournamentservice.service;
 
 import com.ga.equestrian.tournamentservice.dto.request.TournamentRequest;
 import com.ga.equestrian.tournamentservice.dto.request.UpdateTournamentRequest;
+import com.ga.equestrian.tournamentservice.event.AuditEventPublisher;
 import com.ga.equestrian.tournamentservice.event.TicketEventPublisher;
 import com.ga.equestrian.tournamentservice.exception.InformationExistException;
 import com.ga.equestrian.tournamentservice.exception.InformationNotFoundException;
@@ -11,6 +12,7 @@ import com.ga.equestrian.tournamentservice.model.enums.*;
 import com.ga.equestrian.tournamentservice.repository.SeatRepository;
 import com.ga.equestrian.tournamentservice.repository.TicketRepository;
 import com.ga.equestrian.tournamentservice.repository.TournamentRepository;
+import com.ga.equestrian.tournamentservice.security.AuthUser;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,7 +27,7 @@ public class TournamentService {
     private final SeatRepository seatRepository;
     private final TicketRepository ticketRepository;
     private final TicketEventPublisher ticketEventPublisher;
-
+    private final AuditEventPublisher auditEventPublisher;
 
 
     /**
@@ -34,7 +36,7 @@ public class TournamentService {
      * @return
      */
     @Transactional
-    public Tournament add(TournamentRequest tournamentRequest){
+    public Tournament add(AuthUser authUser, TournamentRequest tournamentRequest){
         Tournament tournament = new Tournament();
         tournament.setName(tournamentRequest.getName());
         tournament.setTournamentType(tournamentRequest.getTournamentType());
@@ -58,6 +60,8 @@ public class TournamentService {
 
         seatRepository.saveAll(seats);
 
+        auditEventPublisher.record(authUser.userId(), AuditAction.CREATE_TOURNAMENT, "Tournament", tournament.getId(),
+                "Tournament " + tournament.getName() + " created with " + seats.size() + " seats");
         ticketEventPublisher.publish(null, NotificationType.TOURNAMENT_CREATED,
                 "A new tournament is open: " + tournament.getName() + " on " + tournament.getDate() + ". Choose your seat now!");
         return tournament;
@@ -78,7 +82,7 @@ public class TournamentService {
      * @return
      */
     @Transactional
-    public Tournament updateTournament(Long id, UpdateTournamentRequest updateTournamentRequest){
+    public Tournament updateTournament(AuthUser authUser, Long id, UpdateTournamentRequest updateTournamentRequest){
         Tournament tournament = tournamentRepository.findById(id).orElseThrow(
                 () ->  new InformationNotFoundException("Tournament with this id " + id + " not found")
         );
@@ -144,6 +148,8 @@ public class TournamentService {
             ticketEventPublisher.publish(ticket.getUserId(), NotificationType.TOURNAMENT_UPDATED,
                     "The tournament " + tournament.getName() + " was updated. Please check the new details.");
         }
+        auditEventPublisher.record(authUser.userId(), AuditAction.UPDATE_TOURNAMENT, "Tournament", id,
+                "Tournament " + tournament.getName() + " updated");
         return tournament;
     }
 
@@ -197,6 +203,8 @@ public class TournamentService {
 
         ticketEventPublisher.publish(adminUserId, NotificationType.TOURNAMENT_CANCELLED,
                 "You cancelled " + tournament.getName() + ". " + tickets.size() + " tickets were cancelled.");
+        auditEventPublisher.record(adminUserId, AuditAction.CANCEL_TOURNAMENT, "Tournament", id,
+                "Tournament " + tournament.getName() + " cancelled, " + tickets.size() + " tickets cancelled");
         return tournament;
     }
 

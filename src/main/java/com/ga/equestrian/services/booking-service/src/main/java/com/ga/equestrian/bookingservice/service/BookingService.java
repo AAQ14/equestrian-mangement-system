@@ -3,6 +3,7 @@ package com.ga.equestrian.bookingservice.service;
 import com.ga.equestrian.bookingservice.client.UserClient;
 import com.ga.equestrian.bookingservice.dto.request.*;
 import com.ga.equestrian.bookingservice.dto.response.*;
+import com.ga.equestrian.bookingservice.event.AuditEventPublisher;
 import com.ga.equestrian.bookingservice.event.BookingEventPublisher;
 import com.ga.equestrian.bookingservice.exception.*;
 import com.ga.equestrian.bookingservice.mapper.*;
@@ -32,6 +33,8 @@ public class BookingService {
     private final BookingMapper bookingMapper;
     private final UserClient userClient;
     private final BookingEventPublisher bookingEventPublisher;
+    private final AuditEventPublisher auditEventPublisher;
+
 
     @Transactional
     public BookingResponse createBooking(AuthUser authUser, BookingRequest request){
@@ -87,6 +90,10 @@ public class BookingService {
             if (takenSpots + 1 >= session.getCapacity()) {
                 session.setSessionStatus(SessionStatus.FULL);
             }
+
+        auditEventPublisher.record(authUser.userId(), AuditAction.CREATE_BOOKING, "Booking", savedBooking.getId(),
+                "Booking " + savedBooking.getId() + " created for user " + userBookedId + " in session " + session.getId());
+
         log.info("User {} created booking {} for session {} (booked user {})",
                authUser.userId(), savedBooking.getId(), session.getId(), userBookedId);
 
@@ -179,6 +186,8 @@ public class BookingService {
         }
         changeStatus(booking, request.getBookingStatus());
         log.info("User {} changed booking {} to {}", authUser.userId(), booking.getId(), booking.getBookingStatus());
+        auditEventPublisher.record(authUser.userId(), AuditAction.UPDATE_BOOKING, "Booking", booking.getId(),
+                "Booking " + booking.getId() + " changed to " + booking.getBookingStatus());
         return bookingMapper.toResponse(booking);
     }
 
@@ -197,6 +206,8 @@ public class BookingService {
         Booking booking = findAccessibleBooking(id, authUser);
         changeStatus(booking, BookingStatus.CANCELLED);
         log.info("User {} cancelled booking {}", authUser.userId(), booking.getId());
+        auditEventPublisher.record(authUser.userId(), AuditAction.CANCEL_BOOKING, "Booking", booking.getId(),
+                "Booking " + booking.getId() + " cancelled");
         return bookingMapper.toResponse(booking);
     }
 

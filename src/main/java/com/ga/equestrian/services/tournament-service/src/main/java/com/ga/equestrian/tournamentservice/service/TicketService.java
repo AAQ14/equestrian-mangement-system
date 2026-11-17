@@ -1,6 +1,7 @@
 package com.ga.equestrian.tournamentservice.service;
 
 import com.ga.equestrian.tournamentservice.dto.request.TicketRequest;
+import com.ga.equestrian.tournamentservice.event.AuditEventPublisher;
 import com.ga.equestrian.tournamentservice.event.TicketEventPublisher;
 import com.ga.equestrian.tournamentservice.exception.*;
 import com.ga.equestrian.tournamentservice.repository.PaymentRepository;
@@ -35,6 +36,7 @@ public class TicketService {
     private final TransactionTemplate transactionTemplate;
     private final ReentrantLock updateLock = new ReentrantLock();
     private final TicketEventPublisher ticketEventPublisher;
+    private final AuditEventPublisher auditEventPublisher;
 
 
     public Ticket buyTicket(Long userId, Long tournamentId, TicketRequest ticketRequest){
@@ -63,10 +65,6 @@ public class TicketService {
         }catch (SeatAlreadySoldException e) {
             log.warn("Ticket purchase conflict: seat={}, thread={}", seatId, Thread.currentThread().getName());
            ticketEventPublisher.publish(userId, NotificationType.SEAT_CONFLICT, e.getMessage() + " Please choose another seat.");
-            /**
-             *  auditLogService.record(email, AuditAction.SEAT_CONFLICT, "Seat", seatId,
-             *                     "Seat " + seatId + " was already sold");
-             */
             throw e;
         }catch (InterruptedException ex){
             throw new RuntimeException(ex);
@@ -78,6 +76,8 @@ public class TicketService {
             log.info("Thread [" + Thread.currentThread().getName() + "] released the lock of the seat " + seatId);
         }
         ticketEventPublisher.publish(userId, NotificationType.TICKET_PURCHASED, "Your ticket for " + tournament.getName() + " , seat " + seat.getSeatNumber()+ ", is confirmed.");
+        auditEventPublisher.record(userId, AuditAction.BUY_TICKET, "Ticket", ticket.getId(),
+                "Ticket " + ticket.getId() + " bought for seat " + seat.getSeatNumber());
         return ticket;
 
     }
@@ -182,6 +182,8 @@ public class TicketService {
         //ToDo: publish TICKET_CANCEL event
         ticketEventPublisher.publish(ticket.getUserId(), NotificationType.TICKET_CANCELLED,
                 "Your ticket for " + ticket.getTournament().getName() + " was cancelled.");
+        auditEventPublisher.record(userId, AuditAction.CANCEL_TICKET, "Ticket", id,
+                "Ticket " + id + " cancelled");
         return cancelled;
     }
 
@@ -205,6 +207,8 @@ public class TicketService {
         //Todo: publish TICKET_CANCELLED event.
         ticketEventPublisher.publish(ticket.getUserId(), NotificationType.TICKET_CANCELLED,
                 "Your ticket for " + ticket.getTournament().getName() + " was cancelled.");
+        auditEventPublisher.record(userId, AuditAction.CANCEL_TICKET, "Ticket", id,
+                "Ticket " + id + " cancelled");
         return cancelled;
 
     }
@@ -280,6 +284,8 @@ public class TicketService {
         ticketEventPublisher.publish(userId, NotificationType.TICKET_SEAT_CHANGED,
                 "Your seat for " + updated.getTournament().getName()
                         + " was changed to seat " + updated.getSeat().getSeatNumber() + ".");
+        auditEventPublisher.record(userId, AuditAction.UPDATE_TICKET, "Ticket", id,
+                "Ticket " + id + " moved to seat " + updated.getSeat().getSeatNumber());
         return updated;
     }
 

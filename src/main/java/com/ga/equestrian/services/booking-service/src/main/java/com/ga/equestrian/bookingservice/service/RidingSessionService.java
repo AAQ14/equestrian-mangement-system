@@ -2,6 +2,7 @@ package com.ga.equestrian.bookingservice.service;
 
 import com.ga.equestrian.bookingservice.dto.request.*;
 import com.ga.equestrian.bookingservice.dto.response.*;
+import com.ga.equestrian.bookingservice.event.AuditEventPublisher;
 import com.ga.equestrian.bookingservice.event.BookingEventPublisher;
 import com.ga.equestrian.bookingservice.exception.InformationNotFoundException;
 import com.ga.equestrian.bookingservice.exception.InvalidSessionException;
@@ -30,6 +31,7 @@ public class RidingSessionService {
     private final BookingRepository bookingRepository;
     private final HorseAssignmentRepository horseAssignmentRepository;
     private final BookingEventPublisher bookingEventPublisher;
+    private final AuditEventPublisher auditEventPublisher;
 
     /**
      * Creates a riding session for an existing instructor.
@@ -53,6 +55,8 @@ public class RidingSessionService {
         session.setCapacity(request.getCapacity());
 
         RidingSession savedSession = ridingSessionRepository.save(session);
+        auditEventPublisher.record(instructor.getUserId(), AuditAction.CREATE_RIDING_SESSION, "RidingSession", savedSession.getId(),
+                "Session on " + savedSession.getDate() + " created");
         return ridingSessionMapper.toResponse(savedSession);
     }
 
@@ -156,6 +160,8 @@ public class RidingSessionService {
             bookingEventPublisher.publish(booking.getUserId(), NotificationType.SESSION_UPDATED,
                     "Your session on " + ridingSession.getDate() + " was updated. Please check the new details.");
         }
+        auditEventPublisher.record(authUser.userId(), AuditAction.UPDATE_RIDING_SESSION, "RidingSession", id,
+                "Session " + id + " updated");
         return ridingSessionMapper.toResponse(ridingSession);
     }
 
@@ -208,6 +214,8 @@ public class RidingSessionService {
         log.info("Session {} cancelled, {} bookings cancelled, thread={}",
                 id, bookings.size(), Thread.currentThread().getName());
 
+        auditEventPublisher.record(authUser.userId(), AuditAction.CANCEL_RIDING_SESSION, "RidingSession", id,
+                "Session " + id + " cancelled, " + bookings.size() + " bookings cancelled");
         return ridingSessionMapper.toResponse(session);
     }
 }

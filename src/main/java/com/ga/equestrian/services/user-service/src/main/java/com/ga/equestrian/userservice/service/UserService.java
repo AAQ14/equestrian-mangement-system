@@ -3,12 +3,14 @@ package com.ga.equestrian.userservice.service;
 import com.ga.equestrian.userservice.dto.request.UpdateUserRequest;
 import com.ga.equestrian.userservice.dto.response.UserResponse;
 import com.ga.equestrian.userservice.dto.response.UserSummary;
+import com.ga.equestrian.userservice.event.AuditEventPublisher;
 import com.ga.equestrian.userservice.exception.InformationNotFoundException;
 import com.ga.equestrian.userservice.exception.InvalidFileException;
 import com.ga.equestrian.userservice.exception.InvalidUserActionException;
 import com.ga.equestrian.userservice.mapper.UserMapper;
 import com.ga.equestrian.userservice.mapper.UserSummaryMapper;
 import com.ga.equestrian.userservice.model.entity.User;
+import com.ga.equestrian.userservice.model.enums.AuditAction;
 import com.ga.equestrian.userservice.model.enums.Role;
 import com.ga.equestrian.userservice.model.enums.UserStatus;
 import com.ga.equestrian.userservice.repository.UserRepository;
@@ -27,6 +29,7 @@ public class UserService {
     private final UserMapper userMapper;
     private final FileStorageService fileStorageService;
     private final UserSummaryMapper userSummaryMapper;
+    private final AuditEventPublisher auditEventPublisher;
     /**
      * Updates the profile of the signed-in user.
      *
@@ -64,6 +67,8 @@ public class UserService {
                 () -> new InformationNotFoundException("User with id " + id + " not found."));
         applyProfileUpdate(user, request);
         log.info("Admin {} updated user {}", admin.getId(), user.getId());
+        auditEventPublisher.record(findUserId(adminEmail), AuditAction.UPDATE_USER, "User", id,
+                "User " + id + " updated by admin");
         return userMapper.toResponse(user);
     }
 
@@ -150,6 +155,8 @@ public class UserService {
         }
         user.setUserStatus(UserStatus.INACTIVE);
         log.info("Admin {} deactivated user {}", admin.getId(), user.getId());
+        auditEventPublisher.record(admin.getId(), AuditAction.DEACTIVATE_USER, "User", id,
+                "User " + id + " deactivated");
         return userMapper.toResponse(user);
     }
 
@@ -176,6 +183,8 @@ public class UserService {
         }
         user.setUserStatus(UserStatus.ACTIVE);
         log.info("Admin {} reactivated user {}", admin.getId(), user.getId());
+        auditEventPublisher.record(findUserId(adminEmail), AuditAction.ACTIVATE_USER, "User", id,
+                "User " + id + " activated");
         return userMapper.toResponse(user);
     }
 
@@ -199,6 +208,18 @@ public class UserService {
         );
         user.setRole(role);
         userRepository.save(user);
+        auditEventPublisher.record(null, AuditAction.CHANGE_ROLE, "User", id,
+                "Role of user " + id + " changed to " + role);
         return userSummaryMapper.toSummary(user);
+    }
+
+    /**
+     * Finds the id of the signed-in admin from the email in the JWT, for the audit log.
+     *
+     * @param email the admin's email.
+     * @return the admin's id, or null if not found.
+     */
+    private Long findUserId(String email) {
+        return userRepository.findByEmail(email).map(User::getId).orElse(null);
     }
 }

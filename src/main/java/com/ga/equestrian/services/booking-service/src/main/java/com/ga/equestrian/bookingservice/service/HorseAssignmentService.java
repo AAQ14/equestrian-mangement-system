@@ -1,6 +1,7 @@
 package com.ga.equestrian.bookingservice.service;
 import com.ga.equestrian.bookingservice.dto.request.HorseAssignmentRequest;
 import com.ga.equestrian.bookingservice.dto.request.HorseAssignmentUpdateRequest;
+import com.ga.equestrian.bookingservice.event.AuditEventPublisher;
 import com.ga.equestrian.bookingservice.event.BookingEventPublisher;
 import com.ga.equestrian.bookingservice.exception.InformationExistException;
 import com.ga.equestrian.bookingservice.exception.InformationNotFoundException;
@@ -39,6 +40,8 @@ public class HorseAssignmentService {
     private final ConcurrentHashMap<Long, ReentrantLock> assignsLock = new ConcurrentHashMap<>();
     private final TransactionTemplate transactionTemplate;
     private final BookingEventPublisher bookingEventPublisher;
+    private final AuditEventPublisher auditEventPublisher;
+
 
     /**
      * Assigns a horse to a booking. A lock on the horse makes sure only one thread at a time
@@ -144,9 +147,8 @@ public class HorseAssignmentService {
         log.info("Horse assignment succeeded: booking={}, horse={}, session={}, thread={}",
                 bookingId, horseId, ridingSession.getId(), Thread.currentThread().getName());
 
-
-        /* auditLogService.record(email, AuditAction.ASSIGN_HORSE, "HorseAssignment", saved.getId(),
-                "Horse " + horseId + " assigned to booking " + bookingId);  */
+        auditEventPublisher.record(authUser.userId(), AuditAction.ASSIGN_HORSE, "HorseAssignment", saved.getId(),
+                "Horse " + horseId + " assigned to booking " + bookingId);
 
         String message = isBookingOwner
                 ? "A horse was assigned to your booking for " + ridingSession.getDate() + " successfully."
@@ -270,9 +272,8 @@ public class HorseAssignmentService {
         log.info("Horse change succeeded: booking={}, oldHorse={}, newHorse={}, thread={}",
                 bookingId, oldHorseId, horseId, Thread.currentThread().getName());
 
-        //ToDo: add audit log event
-        /* auditLogService.record(email, AuditAction.CHANGE_HORSE, "HorseAssignment", saved.getId(),
-                "Booking " + bookingId + " moved from horse " + oldHorseId + " to horse " + horseId); */
+        auditEventPublisher.record(authUser.userId(), AuditAction.CHANGE_HORSE, "HorseAssignment", saved.getId(),
+                "Booking " + bookingId + " moved from horse " + oldHorseId + " to horse " + horseId);
 
         String message = isBookingOwner
                 ? "The horse of your booking for " + ridingSession.getDate() + " was changed successfully."
@@ -346,18 +347,14 @@ public class HorseAssignmentService {
         horseAssignmentRepository.delete(horseAssignment);
         log.info("Horse assignment cancelled: booking={}, horse={}, thread={}",
                 bookingId, horseAssignment.getHorse().getId(), Thread.currentThread().getName());
-        //ToDo: audit log publish event
-        /*
-            auditLogService.record(email, AuditAction.REMOVE_HORSE, "HorseAssignment", horseAssignment.getId(),
+
+        auditEventPublisher.record(authUser.userId(), AuditAction.REMOVE_HORSE, "HorseAssignment", horseAssignment.getId(),
                 "Horse " + horseId + " removed from booking " + bookingId);
-         */
 
         String message = isBookingOwner
                 ? "The horse of your booking for " + session.getDate() + " was removed successfully."
                 : "The instructor removed the horse of your booking for " + session.getDate() + ".";
 
-
-        //ToDo: notification service publish event.
         bookingEventPublisher.publish(horseAssignment.getBooking().getUserId(), NotificationType.HORSE_ASSIGNMENT_CANCELLED, message);
 
     }
