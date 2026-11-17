@@ -31,6 +31,7 @@ public class SseEmitterRegistry {
         emitter.onCompletion(()->remove(userId, emitter));
         emitter.onTimeout(()->remove(userId, emitter));
         emitter.onError(ex->remove(userId, emitter));
+        log.info("SSE connected: user={}, open connections={}", userId, emitters.get(userId).size());
         return emitter;
     }
 
@@ -42,10 +43,12 @@ public class SseEmitterRegistry {
      * @param data the notification to send.
      */
     public void send(Long userId, NotificationResponse data){
-        for(SseEmitter emitter: emitters.getOrDefault(userId, List.of())){
+        List<SseEmitter> userEmitters = emitters.getOrDefault(userId, List.of());
+        log.info("SSE send: user={}, open connections={}", userId, userEmitters.size());
+        for(SseEmitter emitter : userEmitters){
             try{
                 emitter.send(SseEmitter.event().name("notification").data(data));
-            }catch (IOException ex){
+            }catch (Exception ex){
                 remove(userId, emitter);
             }
         }

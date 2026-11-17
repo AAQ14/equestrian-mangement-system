@@ -33,6 +33,7 @@ public class TournamentService {
      * @param tournamentRequest
      * @return
      */
+    @Transactional
     public Tournament add(TournamentRequest tournamentRequest){
         Tournament tournament = new Tournament();
         tournament.setName(tournamentRequest.getName());
@@ -57,7 +58,6 @@ public class TournamentService {
 
         seatRepository.saveAll(seats);
 
-        // ToDo: publish TOURNAMENT_CREATED event. Notification-service will notify all active clients.
         ticketEventPublisher.publish(null, NotificationType.TOURNAMENT_CREATED,
                 "A new tournament is open: " + tournament.getName() + " on " + tournament.getDate() + ". Choose your seat now!");
         return tournament;
@@ -138,8 +138,12 @@ public class TournamentService {
         }
 
         tournamentRepository.save(tournament);
-        //ToDo: publish TOURNAMENT_UPDATED event for each ticket holder.
-        // ticket.getUserId() gives the id of each holder.
+        List<Ticket> holders = ticketRepository.findAllByTournamentIdAndTicketStatusIn(
+                id, List.of(TicketStatus.PENDING, TicketStatus.CONFIRMED));
+        for (Ticket ticket : holders) {
+            ticketEventPublisher.publish(ticket.getUserId(), NotificationType.TOURNAMENT_UPDATED,
+                    "The tournament " + tournament.getName() + " was updated. Please check the new details.");
+        }
         return tournament;
     }
 
@@ -187,11 +191,12 @@ public class TournamentService {
         tournamentRepository.save(tournament);
 
         for (Ticket ticket: tickets){
-            Long userId = ticket.getUserId();
-            //ToDo: send notification for each ticket holder of the same tournament that the tournament is cancelled.
+            ticketEventPublisher.publish(ticket.getUserId(), NotificationType.TOURNAMENT_CANCELLED,
+                    "The tournament " + tournament.getName() + " was cancelled. Your ticket was cancelled and refunded.");
         }
 
-        //Todo: send a summary to the admin (adminUserId)
+        ticketEventPublisher.publish(adminUserId, NotificationType.TOURNAMENT_CANCELLED,
+                "You cancelled " + tournament.getName() + ". " + tickets.size() + " tickets were cancelled.");
         return tournament;
     }
 

@@ -59,7 +59,7 @@ public class TicketService {
             // This matters: the lock is released only after the commit, so the next thread sees the seat as SOLD.
              ticket = transactionTemplate.execute(status -> processPurchase(userId, tournamentId, ticketRequest));
            log.info("Seat " + seatId + " sold by thread [" + Thread.currentThread().getName() + "]");
-//            Thread.sleep(4000);
+            Thread.sleep(4000);
         }catch (SeatAlreadySoldException e) {
             log.warn("Ticket purchase conflict: seat={}, thread={}", seatId, Thread.currentThread().getName());
            ticketEventPublisher.publish(userId, NotificationType.SEAT_CONFLICT, e.getMessage() + " Please choose another seat.");
@@ -68,9 +68,9 @@ public class TicketService {
              *                     "Seat " + seatId + " was already sold");
              */
             throw e;
-        }//catch (InterruptedException ex){
-//            throw new RuntimeException(ex);
-//        }
+        }catch (InterruptedException ex){
+            throw new RuntimeException(ex);
+        }
         finally {
             // finally always runs, even when processPurchase throws (for example SeatAlreadySoldException),
             // so a failed purchase can never leave the seat locked forever.
@@ -261,11 +261,11 @@ public class TicketService {
         try {
             log.info("Thread [{}] holds the seat change lock: ticket={}", Thread.currentThread().getName(), id);
             updated=  transactionTemplate.execute(status -> updateTicketProcess(userId, id, ticketRequest));
-          //  Thread.sleep(4000);
+            Thread.sleep(4000);
         }
-//        catch (InterruptedException ex){
-//            throw new RuntimeException(ex);
-//        }
+        catch (InterruptedException ex){
+            throw new RuntimeException(ex);
+        }
         catch (SeatAlreadySoldException e) {
             log.warn("Ticket purchase conflict: seat={}, thread={}", ticketRequest.getSeatId(), Thread.currentThread().getName());
             //ToDO: publish SEAT_CONFLICT event.
