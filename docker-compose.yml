@@ -36,6 +36,7 @@ services:
 
 
   user-service:
+      image: ${DOCKERHUB_USER}/equestrian-user-service:${TAG:-latest}
       build:
         context: .
         args:
@@ -60,6 +61,7 @@ services:
           condition: service_started
 
   booking-service:
+      image: ${DOCKERHUB_USER}/equestrian-booking-service:${TAG:-latest}
       build:
         context: .
         args:
@@ -81,6 +83,7 @@ services:
           condition: service_started
 
   tournament-service:
+      image: ${DOCKERHUB_USER}/equestrian-tournament-service:${TAG:-latest}
       build:
         context: .
         args:
@@ -96,6 +99,7 @@ services:
           condition: service_started
 
   notification-service:
+      image: ${DOCKERHUB_USER}/equestrian-notification-service:${TAG:-latest}
       build:
         context: .
         args:
