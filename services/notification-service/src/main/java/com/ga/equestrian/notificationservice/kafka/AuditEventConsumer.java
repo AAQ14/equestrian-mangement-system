@@ -1,6 +1,6 @@
 package com.ga.equestrian.notificationservice.kafka;
 
-import com.ga.equestrian.bookingservice.event.AuditEvent;
+import com.ga.equestrian.notificationservice.dto.event.AuditEvent;
 import com.ga.equestrian.notificationservice.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
