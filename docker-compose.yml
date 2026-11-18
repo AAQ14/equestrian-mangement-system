@@ -10,7 +10,7 @@ services:
     ports:
       - "5433:5432"          # 5433 on laptop, so it doesn't clash with your local PostgreSQL
     volumes:
-      - postgres-data:/var/lib/postgresql/data
+      - postgres-data:/var/lib/postgresqldocker exec -it postgres psql -U postgres -d equestrian -c "\dt"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME}" ]
       interval: 5s
@@ -44,7 +44,7 @@ services:
       ports:
         - "8081:8081"
       environment: &common-env
-        DB_URL: jdbc:postgresql://postgres:5432/equestrian
+        DB_URL: jdbc:postgresql://host.docker.internal:5432/equestrian
         DB_USERNAME: ${DB_USERNAME}
         DB_PASSWORD: ${DB_PASSWORD}
         JWT_SECRET: ${JWT_SECRET}
