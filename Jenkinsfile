@@ -8,7 +8,7 @@ pipeline {
     environment {
         DOCKERHUB_USER = 'amnaaq23'
         VERSION        = "1.0.${BUILD_NUMBER}"
-        EC2_HOST       = 'ubuntu@YOUR_EC2_PUBLIC_IP'
+        EC2_HOST       = 'ubuntu@13.49.234.244'
         SERVICES       = 'user-service booking-service tournament-service notification-service'
     }
 
