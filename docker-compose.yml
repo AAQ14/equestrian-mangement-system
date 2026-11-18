@@ -1,21 +1,4 @@
 services:
-  postgres:
-    image: postgres:16
-    container_name: postgres
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: equestrian
-      POSTGRES_USER: ${DB_USERNAME}
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
-    ports:
-      - "5433:5432"          # 5433 on laptop, so it doesn't clash with your local PostgreSQL
-    volumes:
-      - postgres-data:/var/lib/postgresqldocker exec -it postgres psql -U postgres -d equestrian -c "\dt"
-    healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U ${DB_USERNAME}" ]
-      interval: 5s
-      retries: 10
-
   kafka:
     image: apache/kafka:3.9.1
     container_name: kafka
@@ -45,7 +28,7 @@ services:
       ports:
         - "8081:8081"
       environment: &common-env
-        DB_URL: jdbc:postgresql://host.docker.internal:5432/equestrian
+        DB_URL: ${DB_URL}
         DB_USERNAME: ${DB_USERNAME}
         DB_PASSWORD: ${DB_PASSWORD}
         JWT_SECRET: ${JWT_SECRET}
@@ -55,8 +38,6 @@ services:
       volumes:
         - uploads:/app/uploads
       depends_on:
-        postgres:
-          condition: service_healthy
         kafka:
           condition: service_started
 
@@ -75,8 +56,6 @@ services:
       volumes:
         - uploads:/app/uploads
       depends_on:
-        postgres:
-          condition: service_healthy
         kafka:
           condition: service_started
         user-service:
@@ -93,8 +72,6 @@ services:
         - "8083:8083"
       environment: *common-env
       depends_on:
-        postgres:
-          condition: service_healthy
         kafka:
           condition: service_started
 
@@ -109,8 +86,6 @@ services:
         - "8084:8084"
       environment: *common-env
       depends_on:
-        postgres:
-          condition: service_healthy
         kafka:
           condition: service_started
 volumes:
