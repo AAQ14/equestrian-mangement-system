@@ -28,7 +28,6 @@ public class InstructorService {
     private final UserClient userClient;
     private final InstructorMapper instructorMapper;
     private  final AuditEventPublisher auditEventPublisher;
-    private final AuthUser authUser;
 
     /**
      * Creates an instructor profile for an existing user.
@@ -110,13 +109,14 @@ public class InstructorService {
      * Updates an instructor's details by id.
      * The linked user cannot be changed.
      *
+     * @param authUser the signed-in admin, taken from the JWT.
      * @param id      the instructor id.
      * @param request the new experience, skill level and specialization.
      * @return the updated instructor as a response DTO.
      * @throws InformationNotFoundException if no instructor has this id.
      */
     @Transactional
-    public InstructorResponse updateInstructor(Long id, InstructorRequest request){
+    public InstructorResponse updateInstructor(AuthUser authUser, Long id, InstructorRequest request){
         Instructor instructor = instructorRepository.findById(id).orElseThrow(
                 () -> new InformationNotFoundException("Instructor with id " + id + " not found.")
         );

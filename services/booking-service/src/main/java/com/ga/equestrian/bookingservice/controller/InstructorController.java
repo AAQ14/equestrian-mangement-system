@@ -78,7 +78,7 @@ public class InstructorController {
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/instructors/{id}")
     public ResponseEntity<InstructorResponse> updateInstructor(@AuthenticationPrincipal AuthUser authUser, @Valid @RequestBody InstructorRequest instructorRequest, @PathVariable Long id){
-        InstructorResponse instructor = instructorService.updateInstructor(id, instructorRequest);
+        InstructorResponse instructor = instructorService.updateInstructor(authUser, id, instructorRequest);
         return ResponseEntity.status(HttpStatus.OK).body(instructor);
     }
 
