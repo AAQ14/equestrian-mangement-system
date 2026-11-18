@@ -89,5 +89,4 @@ services:
         kafka:
           condition: service_started
 volumes:
-  postgres-data:
   uploads:
