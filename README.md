@@ -499,5 +499,4 @@ Interactive documentation: http://localhost:8000/swagger-ui/index.html#/
 | Spring Data JPA Documentation | https://docs.spring.io/spring-data/jpa/reference/ | Derived query methods |
 | JJWT | https://github.com/jwtk/jjwt | Creating and validating JWTs |
 | Claude (Anthropic) | https://claude.ai | Code reviews, explanations and suggestions; I tested and can explain all submitted code |
-| ADD_URL | ADD_PURPOSE |
 
