@@ -33,7 +33,7 @@ public class TournamentController {
      * @param tournamentRequest
      * @return
      */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('EVENT_MANAGER')")
     @PostMapping
     public ResponseEntity<TournamentResponse> addTournament(@AuthenticationPrincipal AuthUser authUser, @Valid @RequestBody TournamentRequest tournamentRequest){
         Tournament tournament = tournamentService.add(authUser, tournamentRequest);
@@ -51,7 +51,7 @@ public class TournamentController {
         return ResponseEntity.ok(responses);
     }
 
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('EVENT_MANAGER')")
     @PatchMapping("/{id}")
     public ResponseEntity<TournamentResponse> updateTournament(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long id, @Valid @RequestBody UpdateTournamentRequest updateTournamentRequest){
             Tournament tournament = tournamentService.updateTournament(authUser, id, updateTournamentRequest);
@@ -64,7 +64,7 @@ public class TournamentController {
      * @param id the id of the tournament.
      * @return the cancelled tournament.
      */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('EVENT_MANAGER')")
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<TournamentResponse> cancelTournament(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long id){
         Tournament tournament = tournamentService.cancelTournament(authUser.userId(), id);

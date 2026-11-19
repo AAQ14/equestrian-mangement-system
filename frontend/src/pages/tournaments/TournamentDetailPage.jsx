@@ -75,7 +75,7 @@ export default function TournamentDetailPage() {
   const perRow = seatsPerRow(seats.length);
   const available = seats.filter((s) => s.seatStatus === 'AVAILABLE').length;
   const isOpen = tournament.tournamentStatus === 'UPCOMING' || tournament.tournamentStatus === 'ONGOING';
-  const canBuy = user.role !== 'ADMIN' && isOpen;
+  const canBuy = user.role !== 'ADMIN' && user.role !== 'EVENT_MANAGER' && isOpen;
 
   // Clicking the selected seat again unselects it.
   function handleSelect(seat) {

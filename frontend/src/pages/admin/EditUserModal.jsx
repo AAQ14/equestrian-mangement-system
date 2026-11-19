@@ -6,7 +6,7 @@ import { usersApi } from '../../api/endpoints';
 import { getErrorMessage } from '../../api/axiosInstance';
 
 // Roles an admin can set here. Instructors are added or removed on the Instructors page.
-const ROLES = ['CLIENT', 'ADMIN'];
+const ROLES = ['CLIENT', 'EVENT_MANAGER', 'ADMIN'];
 
 // Admin form to edit a user's name, email, phone, role and status.
 export default function EditUserModal({ user, isMe, onClose, onSaved }) {

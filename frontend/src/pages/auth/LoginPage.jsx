@@ -9,8 +9,9 @@ import AuthLayout from './AuthLayout';
 // Where each role lands after logging in.
 const HOME_BY_ROLE = {
   CLIENT: '/sessions',
+  EVENT_MANAGER: '/events/tournaments',
   INSTRUCTOR: '/instructor/sessions',
-  ADMIN: '/admin/tournaments',
+  ADMIN: '/admin/users',
 };
 
 export default function LoginPage() {

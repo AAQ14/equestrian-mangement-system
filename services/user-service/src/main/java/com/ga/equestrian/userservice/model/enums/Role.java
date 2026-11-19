@@ -9,5 +9,7 @@ public enum Role {
     /** Creates and manages their own riding sessions. */
     INSTRUCTOR,
     /** Browses and books riding sessions. */
-    CLIENT
+    CLIENT,
+    /** Creates and manages tournaments and their tickets. */
+    EVENT_MANAGER
 }

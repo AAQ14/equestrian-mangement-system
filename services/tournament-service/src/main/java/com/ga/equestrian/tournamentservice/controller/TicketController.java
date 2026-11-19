@@ -50,7 +50,7 @@ public class TicketController {
      *
      * @return a list of tickets.
      */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('EVENT_MANAGER')")
     @GetMapping
     public ResponseEntity<List<TicketResponse>> getAllTickets(){
         List<TicketResponse> tickets = ticketService.getAllTickets().stream().map(ticketMapper::toResponse).toList();
@@ -95,7 +95,7 @@ public class TicketController {
      * @param id the id of the ticket.
      * @return the cancelled ticket.
      */
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('EVENT_MANAGER')")
     @PatchMapping("/{id}/cancel")
     public ResponseEntity<TicketResponse> cancelTicket(@AuthenticationPrincipal AuthUser authUser, @PathVariable Long id) {
         Ticket ticket = ticketService.cancelTicket(authUser.userId(), id);

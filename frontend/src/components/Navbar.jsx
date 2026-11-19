@@ -21,16 +21,18 @@ const LINKS_BY_ROLE = {
     { to: '/instructor/sessions', label: 'My sessions' },
     { to: '/instructor/bookings', label: 'Bookings' },
     { to: '/tournaments', label: 'Tournaments' },
+    { to: '/admin/horses', label: 'Horses' },
     { to: '/my-tickets', label: 'My tickets' },
   ],
   ADMIN: [
-    { to: '/admin/tournaments', label: 'Tournaments' },
-    { to: '/admin/tickets', label: 'Tickets' },
-    { to: '/admin/users', label: 'Users' },
-    { to: '/admin/horses', label: 'Horses' },
+    { to: '/admin/users', label: 'Users' }, ,
     { to: '/admin/instructors', label: 'Instructors' },
     { to: '/admin/audit-logs', label: 'Audit log' },
     { to: '/admin/concurrency', label: 'Demo' },
+  ],
+  EVENT_MANAGER: [
+    { to: '/events/tournaments', label: 'Tournaments' },
+    { to: '/events/tickets', label: 'Tickets' },
   ],
 };
 

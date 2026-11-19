@@ -65,13 +65,17 @@ export default function App() {
 
           {/* Admins only */}
           <Route element={<ProtectedRoute roles={['ADMIN']} />}>
-            <Route path="/admin/tournaments" element={<AdminTournamentsPage />} />
-            <Route path="/admin/tickets" element={<AdminTicketsPage />} />
             <Route path="/admin/users" element={<AdminUsersPage />} />
             <Route path="/admin/horses" element={<AdminHorsesPage />} />
             <Route path="/admin/instructors" element={<AdminInstructorsPage />} />
             <Route path="/admin/audit-logs" element={<AuditLogPage />} />
             <Route path="/admin/concurrency" element={<ConcurrencyDemoPage />} />
+          </Route>
+
+          {/* Event managers only */}
+          <Route element={<ProtectedRoute roles={['EVENT_MANAGER']} />}>
+            <Route path="/events/tournaments" element={<AdminTournamentsPage />} />
+            <Route path="/events/tickets" element={<AdminTicketsPage />} />
           </Route>
 
           <Route path="*" element={<NotFoundPage />} />
