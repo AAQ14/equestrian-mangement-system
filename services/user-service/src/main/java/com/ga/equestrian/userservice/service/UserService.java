@@ -1,9 +1,11 @@
 package com.ga.equestrian.userservice.service;
 
+import com.ga.equestrian.userservice.dto.request.AdminUpdateUserRequest;
 import com.ga.equestrian.userservice.dto.request.UpdateUserRequest;
 import com.ga.equestrian.userservice.dto.response.UserResponse;
 import com.ga.equestrian.userservice.dto.response.UserSummary;
 import com.ga.equestrian.userservice.event.AuditEventPublisher;
+import com.ga.equestrian.userservice.exception.InformationExistException;
 import com.ga.equestrian.userservice.exception.InformationNotFoundException;
 import com.ga.equestrian.userservice.exception.InvalidFileException;
 import com.ga.equestrian.userservice.exception.InvalidUserActionException;
@@ -60,14 +62,48 @@ public class UserService {
      * @throws InvalidFileException if the picture is empty, too large or not an allowed image type.
      */
     @Transactional
-    public UserResponse updateUser(String adminEmail, Long id, UpdateUserRequest request){
+    public UserResponse updateUser(String adminEmail, Long id, AdminUpdateUserRequest request){
         User admin = userRepository.findByEmail(adminEmail).orElseThrow(
                 () -> new InformationNotFoundException("User with email " + adminEmail + " not found."));
         User user = userRepository.findById(id).orElseThrow(
                 () -> new InformationNotFoundException("User with id " + id + " not found."));
-        applyProfileUpdate(user, request);
+
+        if (request.getFirstName() != null && !request.getFirstName().isBlank()) user.setFirstName(request.getFirstName().trim());
+        if (request.getLastName() != null && !request.getLastName().isBlank()) user.setLastName(request.getLastName().trim());
+        if (request.getPhone() != null && !request.getPhone().isBlank()) user.setPhone(request.getPhone());
+
+        // Email: must stay unique.
+        if (request.getEmail() != null && !request.getEmail().isBlank()) {
+            String newEmail = request.getEmail().trim().toLowerCase();
+            if (!newEmail.equals(user.getEmail())) {
+                if (userRepository.existsByEmail(newEmail)) {
+                    throw new InformationExistException("Email " + newEmail + " is already used.");
+                }
+                user.setEmail(newEmail);
+            }
+        }
+
+        // Role: not your own, and instructors are managed on the instructors page.
+        if (request.getRole() != null && request.getRole() != user.getRole()) {
+            if (user.getId().equals(admin.getId())) {
+                throw new InvalidUserActionException("You cannot change your own role.");
+            }
+            if (request.getRole() == Role.INSTRUCTOR || user.getRole() == Role.INSTRUCTOR) {
+                throw new InvalidUserActionException("Use the instructors page to add or remove an instructor.");
+            }
+            user.setRole(request.getRole());
+        }
+
+        // Status: an admin cannot deactivate themselves.
+        if (request.getUserStatus() != null && request.getUserStatus() != user.getUserStatus()) {
+            if (user.getId().equals(admin.getId())) {
+                throw new InvalidUserActionException("You cannot change your own status.");
+            }
+            user.setUserStatus(request.getUserStatus());
+        }
+
         log.info("Admin {} updated user {}", admin.getId(), user.getId());
-        auditEventPublisher.record(findUserId(adminEmail), AuditAction.UPDATE_USER, "User", id,
+        auditEventPublisher.record(admin.getId(), AuditAction.UPDATE_USER, "User", id,
                 "User " + id + " updated by admin");
         return userMapper.toResponse(user);
     }

@@ -8,6 +8,7 @@ import { getErrorMessage } from '../../api/axiosInstance';
 import useApi from '../../hooks/useApi';
 import images from '../../assets/images';
 import { formatDateTime, formatEnum, USER_STATUSES } from '../../utils/format';
+import EditUserModal from './EditUserModal';
 
 // Admin: list users and activate / deactivate them.
 export default function AdminUsersPage() {
@@ -16,6 +17,7 @@ export default function AdminUsersPage() {
   const [status, setStatus] = useState('');
   const [search, setSearch] = useState('');
   const [busyId, setBusyId] = useState(null);
+  const [editing, setEditing] = useState(null);
   const { data, loading, error, reload } = useApi(() => usersApi.list(status), [status]);
 
   const term = search.trim().toLowerCase();
@@ -70,6 +72,7 @@ export default function AdminUsersPage() {
                     <td>{formatEnum(u.role)}</td>
                     <td><Badge status={u.userStatus} /></td>
                     <td>{formatDateTime(u.createdAt)}</td>
+                    <Button size="sm" variant="outline" onClick={() => setEditing(u)}>Edit</Button>{' '}
                     <td>
                       {/* An admin cannot deactivate their own account. */}
                       {u.email !== me.email && (
@@ -88,6 +91,14 @@ export default function AdminUsersPage() {
               </tbody>
             </table>
           </div>
+        )}
+        {editing && (
+            <EditUserModal
+                user={editing}
+                isMe={editing.email === me.email}
+                onClose={() => setEditing(null)}
+                onSaved={() => { setEditing(null); reload(true); }}
+            />
         )}
       </section>
     </>

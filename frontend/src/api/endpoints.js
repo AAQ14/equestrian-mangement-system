@@ -85,6 +85,13 @@ export const ticketsApi = {
 
 // ---------- Users (admin) ----------
 export const usersApi = {
+  update: (id, fields) => {
+    const form = new FormData();
+    Object.entries(fields).forEach(([key, value]) => {
+      if (value !== '' && value != null) form.append(key, value);
+    });
+    return data(api.patch(`/api/users/${id}`, form, { headers: { 'Content-Type': 'multipart/form-data' } }));
+  },
   list: (userStatus) => getList('/api/users', { params: userStatus ? { userStatus } : {} }),
   deactivate: (id) => data(api.delete(`/api/users/${id}`)),
   activate: (id) => data(api.put(`/api/users/${id}/activate`)),

@@ -1,5 +1,6 @@
 package com.ga.equestrian.userservice.controller;
 
+import com.ga.equestrian.userservice.dto.request.AdminUpdateUserRequest;
 import com.ga.equestrian.userservice.dto.request.UpdateUserRequest;
 import com.ga.equestrian.userservice.dto.response.UserResponse;
 import com.ga.equestrian.userservice.dto.response.UserSummary;
@@ -51,7 +52,7 @@ public class UserController {
      */
     @PatchMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, Authentication authentication, @Valid @ModelAttribute UpdateUserRequest request){
+    public ResponseEntity<UserResponse> updateUser(@PathVariable Long id, Authentication authentication, @Valid @ModelAttribute AdminUpdateUserRequest request){
         UserResponse response = userService.updateUser(authentication.getName(), id, request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
     }
