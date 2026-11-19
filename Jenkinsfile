@@ -37,6 +37,7 @@ pipeline {
                     for (s in SERVICES.split(' ')) {
                         sh "docker build --build-arg SERVICE=${s} -t ${DOCKERHUB_USER}/equestrian-${s}:${VERSION} -t ${DOCKERHUB_USER}/equestrian-${s}:latest ."
                     }
+                    sh "docker build -t ${DOCKERHUB_USER}/equestrian-frontend:${VERSION} -t ${DOCKERHUB_USER}/equestrian-frontend:latest frontend"
                 }
             }
         }
@@ -50,6 +51,8 @@ pipeline {
                             sh "docker push ${DOCKERHUB_USER}/equestrian-${s}:${VERSION}"
                             sh "docker push ${DOCKERHUB_USER}/equestrian-${s}:latest"
                         }
+                        sh "docker push ${DOCKERHUB_USER}/equestrian-frontend:${VERSION}"
+                        sh "docker push ${DOCKERHUB_USER}/equestrian-frontend:latest"
                     }
                     sh 'docker logout'
                 }

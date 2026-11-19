@@ -88,5 +88,18 @@ services:
       depends_on:
         kafka:
           condition: service_started
+  frontend:
+    image: ${DOCKERHUB_USER}/equestrian-frontend:${TAG:-latest}
+    build:
+      context: ./frontend
+    container_name: frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - user-service
+      - booking-service
+      - tournament-service
+      - notification-service
 volumes:
   uploads:
