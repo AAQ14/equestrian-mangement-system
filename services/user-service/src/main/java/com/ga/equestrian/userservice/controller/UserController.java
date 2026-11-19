@@ -32,6 +32,7 @@ public class UserController {
      * @return the updated user.
      */
     @PutMapping("/me")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> updateOwnProfile(Authentication authentication, @Valid @ModelAttribute UpdateUserRequest request){
         UserResponse response = userService.updateOwnProfile(authentication.getName(), request);
         return ResponseEntity.status(HttpStatus.OK).body(response);
@@ -122,6 +123,7 @@ public class UserController {
      * @return the user summary.
      */
     @GetMapping("/{id}/summary")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserSummary> getUserSummary(@PathVariable Long id){
        UserSummary user = userService.getUserSummary(id);
         return ResponseEntity.ok(user);
