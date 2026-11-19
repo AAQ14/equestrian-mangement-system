@@ -10,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
@@ -30,6 +31,7 @@ public class BookingController {
      * @param request the session id and the optional user id.
      * @return the created booking.
      */
+    @PreAuthorize("hasAnyRole('CLIENT','INSTRUCTOR')")
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(@AuthenticationPrincipal AuthUser authUser, @Valid @RequestBody BookingRequest request){
         BookingResponse response = bookingService.createBooking(authUser, request);
@@ -43,6 +45,7 @@ public class BookingController {
      * @param status the booking status to filter by, or null for all.
      * @return the list of bookings.
      */
+    @PreAuthorize("hasAnyRole('CLIENT','INSTRUCTOR')")
     @GetMapping
     public ResponseEntity<List<BookingResponse>> getAllBookings(@AuthenticationPrincipal AuthUser authUser, @RequestParam(required = false)BookingStatus status) {
         List<BookingResponse> bookings = bookingService.getAllBookings(authUser, status);
@@ -57,6 +60,7 @@ public class BookingController {
      * @param id the booking id.
      * @return the booking.
      */
+    @PreAuthorize("hasAnyRole('CLIENT','INSTRUCTOR')")
     @GetMapping("/{id}")
     public ResponseEntity<BookingResponse> getBookingById(@PathVariable Long id, @AuthenticationPrincipal AuthUser authUser) {
         BookingResponse booking = bookingService.getBookingById(id, authUser);
@@ -73,6 +77,7 @@ public class BookingController {
      * @param request the new status.
      * @return the updated booking.
      */
+    @PreAuthorize("hasAnyRole('CLIENT','INSTRUCTOR')")
     @PutMapping("/{id}")
     public ResponseEntity<BookingResponse> updateBooking(@PathVariable Long id, @Valid @RequestBody UpdateBookingRequest request,@AuthenticationPrincipal AuthUser authUser)
     {
@@ -89,6 +94,7 @@ public class BookingController {
      * @param id the booking id.
      * @return the cancelled booking.
      */
+    @PreAuthorize("hasAnyRole('CLIENT','INSTRUCTOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<BookingResponse> deleteBooking(@PathVariable Long id,@AuthenticationPrincipal AuthUser authUser){
         BookingResponse booking = bookingService.deleteBooking(id, authUser);
