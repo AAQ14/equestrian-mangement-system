@@ -7,11 +7,11 @@ import { getErrorMessage } from '../../api/axiosInstance';
 import AuthLayout from './AuthLayout';
 
 // Seeded accounts from DataSeeder.java (all use Password123!). Only for the demo.
-const DEMO_ACCOUNTS = [
-  { label: 'Admin', email: 'admin@equestrian.com' },
-  { label: 'Instructor', email: 'instructor1@equestrian.com' },
-  { label: 'Client', email: 'client1@equestrian.com' },
-];
+// const DEMO_ACCOUNTS = [
+//   { label: 'Admin', email: 'admin@equestrian.com' },
+//   { label: 'Instructor', email: 'instructor1@equestrian.com' },
+//   { label: 'Client', email: 'client1@equestrian.com' },
+// ];
 
 // Where each role lands after logging in.
 const HOME_BY_ROLE = {
@@ -98,21 +98,21 @@ export default function LoginPage() {
         New here? <Link to="/register">Create an account</Link>
       </p>
 
-      <div className="demo-accounts">
-        <p>Demo accounts</p>
-        <div className="demo-list">
-          {DEMO_ACCOUNTS.map((account) => (
-            <button
-              key={account.email}
-              type="button"
-              className="demo-chip"
-              onClick={() => fillDemo(account.email)}
-            >
-              {account.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      {/*<div className="demo-accounts">*/}
+      {/*  <p>Demo accounts</p>*/}
+      {/*  <div className="demo-list">*/}
+      {/*    {DEMO_ACCOUNTS.map((account) => (*/}
+      {/*      <button*/}
+      {/*        key={account.email}*/}
+      {/*        type="button"*/}
+      {/*        className="demo-chip"*/}
+      {/*        onClick={() => fillDemo(account.email)}*/}
+      {/*      >*/}
+      {/*        {account.label}*/}
+      {/*      </button>*/}
+      {/*    ))}*/}
+      {/*  </div>*/}
+      {/*</div>*/}
     </AuthLayout>
   );
 }
