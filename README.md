@@ -1,18 +1,21 @@
 # equestrian-mangement-system
-A secure Spring Boot REST API for an equestrian centre, where clients book riding sessions with instructors.
+A secure microservices system for an equestrian centre, where clients book riding sessions with instructors.
 
 ## Project Information
 
 ### Description
-The Equestrian Centre API is a backend application for managing riding sessions, instructors, horses and client bookings. Clients register, verify their email with a one-time code, browse sessions and book a place. Instructors and admins manage sessions and bookings, and everyone receives real-time notifications about changes.
+The Equestrian Centre API is a backend application for managing riding sessions, instructors, horses and client bookings. Clients register, verify their email with a one-time code, browse sessions and book a place. Instructors and admins manage sessions and bookings, and everyone receives real-time notifications and emails about changes.
+The system started as a single Spring Boot application and has been productionized into four Spring Boot microservices (user, booking, tournament and notification) with a React frontend. The services communicate through REST (OpenFeign) and Apache Kafka events, run in Docker containers with Docker Compose, and are built, tested and deployed automatically by a Jenkins CI/CD pipeline to AWS (EC2 with an RDS PostgreSQL database).
+
 
 ### Purpose
 Equestrian centres often manage bookings by phone or messages, which causes double bookings and confusion about who is attending which session. This API centralises sessions, capacity and bookings, and enforces the booking rules automatically.
+The productionized version also makes the system easier to run and maintain: each service can be updated and deployed on its own, notifications are processed asynchronously so a slow or unavailable notification service never blocks a booking, and every change pushed to GitHub is tested and deployed without manual steps.
 
 ### Users
-- **CLIENT:** registers, books sessions, views and cancels their own bookings, manages their own profile.
-- **INSTRUCTOR:** creates and updates sessions, confirms and manages bookings.
-- **ADMIN:** manages users (including deactivating and reactivating accounts), and has instructor permissions.
+- **CLIENT:** registers, books riding sessions, assigns a horse to their bookings, buys and manages tournament tickets, views and cancels their own bookings and tickets, and manages their own profile.
+- **INSTRUCTOR:** creates, updates and cancels their own riding sessions, manages the bookings of their sessions, books clients into their sessions, and can buy tournament tickets.
+- **ADMIN:** manages users (deactivating and reactivating accounts, changing roles), instructors, horses and tournaments, views all tickets, and reviews the audit log of important actions.
 
 ### Main Features
 - Registration with email verification by a 6-digit code
@@ -26,37 +29,178 @@ Equestrian centres often manage bookings by phone or messages, which causes doub
 - Real-time notifications using Server-Sent Events (SSE)
 - Global exception handling with a consistent JSON error structure
 - Input validation, DTOs and logging
+- Swagger/OpenAPI documentation for each service
+- Automated tests (including Cucumber BDD scenarios) run on every push by the CI/CD pipeline
 
 ### Technologies
+**Backend**
 - Java 17
-- Spring Boot (Web, Data JPA, Security, Validation, Mail)
-- Spring Security with JWT (JJWT)
-- PostgreSQL
-- Hibernate / JPA
-- Lombok
-- Maven
-- Server-Sent Events (`SseEmitter`)
-- Git / GitHub, Trello, Postman
+- Spring Boot 4 (Web MVC, Data JPA, Security, Validation, Mail, Actuator)
+- Spring Security with JWT (JJWT), shared secret across services
+- Spring Cloud OpenFeign (synchronous service-to-service calls)
+- Apache Kafka (KRaft mode) with Spring Kafka (asynchronous events)
+- Server-Sent Events (`SseEmitter`) for real-time notifications
+- PostgreSQL, Hibernate / JPA
+- Lombok, Maven
+- springdoc-openapi (Swagger UI)
+
+**Frontend**
+- React with Vite
+- React Router, Axios
+- nginx (serves the built app and routes API calls to each service)
+
+**Testing**
+- JUnit 5, Spring Boot Test
+- Cucumber (BDD with Gherkin feature files)
+
+**DevOps and Cloud**
+- Docker (multi-stage builds) and Docker Compose
+- Jenkins (CI/CD pipeline, running in Docker)
+- Docker Hub (image registry with versioned tags)
+- AWS EC2 (Ubuntu, runs the containers)
+- AWS RDS for PostgreSQL (managed, private database)
+- AWS Elastic IP and Security Groups
+
+**Tools**
+- Git / GitHub, IntelliJ IDEA
+- Trello, Postman
 
 ## Architecture
 
-The application uses a layered architecture:
+The system has been refactored from a monolith into **four Spring Boot microservices**, split by business responsibility. Each service is an independent Spring Boot application, with its own `pom.xml`, configuration, controllers, services, repositories and Docker image. No service imports another service's Java classes; they communicate only through REST APIs and Kafka events.
+
+```
+                              Internet
+                                 |
+                                 v
+                  +-----------------------------+
+                  |   frontend (React + nginx)  |   port 80
+                  |  routes /auth, /api/... to  |
+                  |      the right service      |
+                  +-----------------------------+
+                     |         |          |         |
+          REST       v         v          v         v       REST / SSE
+            +--------------+ +--------------+ +----------------+ +----------------------+
+            | user-service | |booking-service| |tournament-     | | notification-service |
+            |    :8081     | |    :8082     | |service :8083   | |        :8084         |
+            +--------------+ +--------------+ +----------------+ +----------------------+
+                  ^   |        |       |          |                        ^
+                  |   |        |       |          |                        |
+                  +---|--------+       |          |                        |
+       OpenFeign (sync)|               |          |                        |
+       getUser, role   |               |          |                        |
+                       v               v          v                        |
+                  +------------------------------------------+   consume   |
+                  |           Apache Kafka (KRaft)           |-------------+
+                  |  booking-events  ticket-events           |
+                  |  audit-events                            |
+                  +------------------------------------------+
+
+            All services  ------------------->  PostgreSQL (AWS RDS)
+                          each service uses only its own tables
+```
+
+### Services
+
+| Service | Responsibility | Owned data (tables) | Main APIs | Communication |
+|---|---|---|---|---|
+| **user-service** | Accounts, authentication and profiles | `users`, verification codes | `/auth/users/**`, `/api/users/**` | Issues the JWT used by all services. Publishes `audit-events` (Kafka). Called by booking-service through Feign. |
+| **booking-service** | Riding lessons: instructors, horses, sessions, bookings and horse assignments | `instructors`, `horses`, `riding_sessions`, `bookings`, `horse_assignments`, `payments` | `/api/instructors`, `/api/horses`, `/api/sessions`, `/api/bookings`, `/api/horseAssignments` | Calls user-service **synchronously** (OpenFeign) to read a user and change their role. Publishes `booking-events` and `audit-events` **asynchronously** (Kafka). |
+| **tournament-service** | Tournaments, seat map and ticket sales, including the concurrent seat purchase | `tournaments`, `seats`, `tickets`, `ticket_payments` | `/api/tournaments`, `/api/seats`, `/api/tickets` | Publishes `ticket-events` and `audit-events` (Kafka). Does not call other services. |
+| **notification-service** | Notifications, real-time push, emails and the audit log | `notifications`, `audit_logs`, `user_contacts` | `/api/notifications`, `/api/notifications/stream` (SSE), `/api/audit-logs` | **Consumes** all Kafka topics. Saves notifications, pushes them with SSE and sends emails. Uses `user_contacts`, a local copy of user emails, instead of calling user-service. |
+
+### Communication
+
+| Type | Used for | Why |
+|---|---|---|
+| **REST (synchronous)** | Browser to services (through nginx); booking-service to user-service (OpenFeign: `GET /api/users/{id}/summary`, `PUT /api/users/{id}/role`) | The caller needs the answer immediately, for example to check a user before booking or to make a user an instructor. |
+| **Kafka (asynchronous)** | Booking, session, ticket and tournament events to notification-service; audit events from every service | The producer does not wait for notifications or emails. If notification-service is slow or down, bookings and ticket sales still work, and the messages are processed when it comes back. |
+| **SSE** | notification-service to the browser | Pushes new notifications live, without the page polling. |
+
+### Authentication across services
+user-service signs a JWT containing the user's id, email and role. Every service shares the same `JWT_SECRET` and validates the token itself in its `JwtRequestFilter`, building an `AuthUser(userId, email, role)` without calling user-service. When booking-service calls user-service through Feign, a `RequestInterceptor` forwards the caller's `Authorization` header.
+
+### Data ownership
+All services use one PostgreSQL database (Amazon RDS in production), but **each service reads and writes only its own tables**. Data that belongs to another service is referenced by **id only** (for example `bookings.user_id`), with no foreign key across services. A service that needs another service's data either asks for it through its API (booking-service to user-service with Feign) or keeps a small local copy (notification-service's `user_contacts`).
+
+### Inside each service
+Each microservice keeps the same layered structure:
 
 ```
 Controller  ->  Service  ->  Repository  ->  PostgreSQL
+                  |
+                  +-> Kafka publisher / Feign client
 ```
 
 | Package | Responsibility |
 |---|---|
 | `controller` | Receives HTTP requests, validates input, returns responses |
-| `service` | Business rules and workflows (booking rules, verification codes, notifications) |
+| `service` | Business rules and workflows (booking rules, seat locking, verification codes) |
 | `repository` | Spring Data JPA repositories |
 | `model.entity` / `model.enums` | Database entities and enums |
 | `dto.request` / `dto.response` | Objects exchanged with API clients (entities are never exposed) |
 | `mapper` | Converts entities into response DTOs |
-| `security` | JWT utility, request filter, user details, security configuration |
+| `security` | JWT validation filter, `AuthUser`, security configuration |
+| `client` / `config` | OpenFeign client and the interceptor that forwards the JWT (booking-service) |
+| `event` | Kafka event records and publishers (producers) |
+| `kafka` | Kafka listeners (consumers, notification-service) |
+| `sse` | Registry of open SSE connections per user (notification-service) |
 | `exception` | Custom exceptions and the global exception handler |
-| `sse` | Registry of open SSE connections per user |
+
+## Kafka
+
+Kafka runs in Docker (KRaft mode). Services publish events **after the database commit**, as JSON, and notification-service consumes them.
+
+| Topic | Producer | Consumer | Purpose |
+|---|---|---|---|
+| `booking-events` | booking-service | notification-service | Booking, session and horse-assignment changes |
+| `ticket-events` | tournament-service | notification-service | Ticket and tournament changes |
+| `audit-events` | user, booking, tournament services | notification-service (separate group) | Admin audit log |
+
+**Event example**
+```json
+{ "eventId": "6f1c...", "userId": 45, "type": "BOOKING_CONFIRMED",
+  "message": "Your booking was confirmed.", "occurredAt": "2026-11-19T10:15:30" }
+```
+`userId = null` means a broadcast to all active clients (for example `TOURNAMENT_CREATED`).
+
+**When an event is received**, notification-service saves the notification, pushes it live with SSE (the 🔔 bell), and sends an email for important types.
+
+## Docker
+
+- One multi-stage `Dockerfile` for all services: `ARG SERVICE` picks the service, Maven builds the jar, and a small JRE image runs it.
+- The frontend has its own `Dockerfile`: Node builds the app and nginx serves it.
+- `docker-compose.yml` runs Kafka, the 4 services and the frontend on one Docker network (services use container names, not `localhost`).
+
+**Run locally**
+```bash
+docker compose up -d --build
+```
+Secrets come from a `.env` file (not committed).
+
+## CI/CD (Jenkins)
+
+Jenkins checks GitHub every 2 minutes and runs the pipeline on each new commit to `main`:
+
+```
+Checkout -> Build & Test -> Build Docker images -> Push to Docker Hub -> Deploy to AWS
+```
+
+## AWS
+- **EC2** runs the containers. **RDS PostgreSQL** is a private database that only EC2 can reach.
+- Only port 80 is public. Secrets are kept in `.env` and Jenkins, never in Git.
+
+## Deployment
+Set up EC2 and RDS, add `.env` on EC2, then run `docker compose up -d`. After that, Jenkins deploys every push.
+
+## Testing
+Tests run on H2 on every push, including Cucumber scenarios for booking a session.
+
+## Challenges
+Splitting the monolith, Kafka JSON dates, and a full EC2 disk from logs.
+
+## Future Improvements
+HTTPS, API Gateway, a separate database per service, and Payment stripe.
 
 ### Main components
 - **JwtRequestFilter:** reads the `Authorization: Bearer` header, validates the token and signs the user in.
@@ -79,7 +223,7 @@ The booking workflow is the core of the application. A booking starts as `PENDIN
 - A session must be `AVAILABLE` and in the future to be booked.
 - A session becomes `FULL` when capacity is reached, and `AVAILABLE` again when a booking is cancelled.
 - A user cannot hold two bookings that overlap in time on the same date.
-- Booking status changes follow fixed transitions: `PENDING` to `CONFIRMED` or `CANCELLED`, `CONFIRMED` to `COMPLETED` or `CANCELLED`. `CANCELLED` and `COMPLETED` are final.
+- Booking status changes follow fixed transitions:  `CONFIRMED` or `CANCELLED` to `COMPLETED` or `CANCELLED`. `CANCELLED` and `COMPLETED` are final.
 - Clients can only view and cancel their own bookings. Only instructors and admins can confirm or complete them.
 - Inactive and unverified users cannot log in or use protected routes.
 - An admin cannot deactivate their own account.
@@ -330,10 +474,10 @@ Interactive documentation: http://localhost:8000/swagger-ui/index.html#/
 | **Prevention** | A per-seat `ReentrantLock` plus a database row lock (`SELECT ... FOR UPDATE`), inside a transaction. The lock is released only after the commit, so the second buyer waits, sees `SOLD`, and gets `409 SEAT_ALREADY_SOLD` |
 
 **Evidence**
-- Concurrent test (20 threads, same seat) before the lock: several successes and several tickets
-- After the lock: 1 success, 19 conflicts, 1 ticket
-- Postman: first request `201`, second request `409`
-- Console log lines: `waiting for the lock`, `holds the lock`, `released the lock`
+- Two users try to buy the same seat at the same moment, from two browsers or two Postman requests.
+- Result: the first request gets `201` and its ticket is created. The second gets `409` (seat already sold).
+- Only **one ticket** exists for that seat in the database.
+- The console logs show the second request waiting for the lock and then being rejected.
 
 ### Scenario 2: Same horse in overlapping sessions
 
@@ -355,5 +499,5 @@ Interactive documentation: http://localhost:8000/swagger-ui/index.html#/
 | Spring Data JPA Documentation | https://docs.spring.io/spring-data/jpa/reference/ | Derived query methods |
 | JJWT | https://github.com/jwtk/jjwt | Creating and validating JWTs |
 | Claude (Anthropic) | https://claude.ai | Code reviews, explanations and suggestions; I tested and can explain all submitted code |
-| ADD_MORE | ADD_URL | ADD_PURPOSE |
+| ADD_URL | ADD_PURPOSE |
 
